@@ -28,12 +28,8 @@ export default function LoginPage() {
 
             await Promise.race([loginPromise, timeoutPromise]);
 
-            console.log('Login successful, redirecting...');
-
-            // Small delay to ensure state is updated
-            setTimeout(() => {
-                // Redirect is handled by AuthContext
-            }, 500);
+            console.log('Login successful, redirecting to home...');
+            router.push('/');
         } catch (err: any) {
             console.error('Login error:', err);
             setError(err.message || 'Failed to sign in');
