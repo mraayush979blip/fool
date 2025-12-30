@@ -24,70 +24,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Check active session
         const checkUser = async () => {
             try {
-                console.log('🔄 [Auth] Starting session check...');
-
-                // Direct fetch test to verify connectivity
-                if (typeof window !== 'undefined') {
-                    try {
-                        const healthUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()?.startsWith('http')
-                            ? process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
-                            : `https://${process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()}.supabase.co`}/auth/v1/health`;
-
-                        console.log('📡 [Auth] Testing direct API reaching:', healthUrl);
-                        const res = await fetch(healthUrl);
-                        console.log('✅ [Auth] Direct API reachable - Status:', res.status);
-                    } catch (fErr: any) {
-                        console.error('🔴 [Auth] DIRECT FETCH FAILED! This usually means an AdBlocker or VPN is blocking the API.');
-                        console.error('Fetch Error:', fErr.message);
-                    }
-                }
-
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-                if (sessionError) {
-                    console.error('❌ [Auth] Session error:', sessionError.message);
-                    return;
-                }
+                if (sessionError) return;
 
                 if (session?.user) {
                     setSupabaseUser(session.user);
-                    console.log('👤 [Auth] Session found for:', session.user.email);
 
-                    // Fetch user details from users table
-                    console.log('📡 [Auth] Fetching profile from database...');
-                    const { data: userData, error: userError } = await supabase
+                    const { data: userData } = await supabase
                         .from('users')
                         .select('*')
                         .eq('id', session.user.id)
                         .single();
 
-                    if (userError) {
-                        console.error('❌ [Auth] Database profile fetch error:', userError.message);
-                        console.error('Error Code:', userError.code);
-                    }
-
                     if (userData) {
                         setUser(userData as User);
-                        console.log('✅ [Auth] Profile loaded successfully');
                     } else {
-                        console.error('⚠️ [Auth] User not in users table. Sync required.');
                         await supabase.auth.signOut();
                     }
-                } else {
-                    console.log('ℹ️ [Auth] No active session found');
                 }
-            } catch (error: any) {
-                console.error('🔴 [Auth] Unexpected error during checkUser:', error.message || error);
+            } catch (error) {
+                // Silently handle check errors
             } finally {
                 setLoading(false);
             }
         };
 
-        // Add timeout to prevent infinite loading (increased to 15s for diagnostics)
         const timeout = setTimeout(() => {
-            console.warn('⚠️ [Auth] session check timed out after 15s');
             setLoading(false);
-        }, 15000);
+        }, 10000);
 
         checkUser().finally(() => clearTimeout(timeout));
 
