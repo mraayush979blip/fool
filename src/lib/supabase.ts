@@ -1,15 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    if (process.env.NODE_ENV === 'production') {
-        console.warn('⚠️ WARNING: Supabase environment variables are missing. The app will not function correctly until they are set in Vercel.');
+// During build time (prerendering), these might be missing.
+// We provide a fallback to avoid crashing the build, but warn the developer.
+if (!supabaseUrl || !supabaseAnonKey) {
+    if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
+        console.warn('⚠️ [Supabase] Missing environment variables. Static generation might fail if these are required.');
     }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(
+    supabaseUrl || 'https://placeholder.supabase.co',
+    supabaseAnonKey || 'placeholder-key'
+);
 
 // Helper function to get current user
 export async function getCurrentUser() {
