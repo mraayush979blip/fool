@@ -31,7 +31,7 @@ export default function StudentLayout({
 
                             <div className="flex items-center space-x-4">
                                 <div className="hidden md:flex flex-col items-end mr-2">
-                                    <span className="text-sm font-semibold text-gray-900">{user?.user_metadata?.name || user?.email}</span>
+                                    <span className="text-sm font-semibold text-gray-900">{user?.name || user?.email}</span>
                                     <span className="text-xs text-gray-500 capitalize">{user?.role}</span>
                                 </div>
                                 <div className="bg-gray-100 p-2 rounded-full text-gray-600">
