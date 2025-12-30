@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// If the user provided just the project ID (e.g. tclvquwsxbntvwvozeto), convert it to a full URL
+if (supabaseUrl && !supabaseUrl.startsWith('http')) {
+    supabaseUrl = `https://${supabaseUrl}.supabase.co`;
+}
 
 const isValidUrl = supabaseUrl && (supabaseUrl.startsWith('http://') || supabaseUrl.startsWith('https://'));
 
@@ -12,8 +17,8 @@ if (!isValidUrl) {
 }
 
 export const supabaseAdmin = createClient(
-    isValidUrl ? supabaseUrl : 'https://placeholder.supabase.co',
-    (isValidUrl && supabaseServiceRoleKey) ? supabaseServiceRoleKey : 'placeholder-key',
+    (isValidUrl ? supabaseUrl : 'https://placeholder.supabase.co') as string,
+    ((isValidUrl && supabaseServiceRoleKey) ? supabaseServiceRoleKey : 'placeholder-key') as string,
     {
         auth: {
             autoRefreshToken: false,

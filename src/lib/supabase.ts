@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+// If the user provided just the project ID (e.g. tclvquwsxbntvwvozeto), convert it to a full URL
+if (supabaseUrl && !supabaseUrl.startsWith('http')) {
+    supabaseUrl = `https://${supabaseUrl}.supabase.co`;
+}
 
 // Strict check for valid URL format to prevent crashing the build
 const isValidUrl = supabaseUrl && (supabaseUrl.startsWith('http://') || supabaseUrl.startsWith('https://'));
@@ -13,8 +18,8 @@ if (!isValidUrl) {
 }
 
 export const supabase = createClient(
-    isValidUrl ? supabaseUrl : 'https://placeholder.supabase.co',
-    (isValidUrl && supabaseAnonKey) ? supabaseAnonKey : 'placeholder-key'
+    (isValidUrl ? supabaseUrl : 'https://placeholder.supabase.co') as string,
+    ((isValidUrl && supabaseAnonKey) ? supabaseAnonKey : 'placeholder-key') as string
 );
 
 // Helper function to get current user
