@@ -127,7 +127,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 id="phase_number"
                                 required
                                 min="1"
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border"
+                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
                                 value={formData.phase_number}
                                 onChange={(e) => setFormData({ ...formData, phase_number: parseInt(e.target.value) })}
                             />
@@ -144,7 +144,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 name="title"
                                 id="title"
                                 required
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border"
+                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
                                 placeholder="e.g. Fundamental Concepts"
                                 value={formData.title}
                                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -161,7 +161,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 id="description"
                                 name="description"
                                 rows={3}
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border"
+                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
                                 placeholder="What will students learn in this phase?"
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -185,7 +185,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 name="youtube_url"
                                 id="youtube_url"
                                 placeholder="https://www.youtube.com/watch?v=..."
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border"
+                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
                                 value={formData.youtube_url || ''}
                                 onChange={(e) => setFormData({ ...formData, youtube_url: e.target.value })}
                             />
@@ -202,7 +202,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 name="assignment_resource_url"
                                 id="assignment_resource_url"
                                 placeholder="Link to project boilerplate or instructions"
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border"
+                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
                                 value={formData.assignment_resource_url || ''}
                                 onChange={(e) => setFormData({ ...formData, assignment_resource_url: e.target.value })}
                             />
@@ -225,7 +225,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 name="start_date"
                                 id="start_date"
                                 required
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border"
+                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
                                 value={formData.start_date}
                                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                             />
@@ -242,7 +242,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 name="end_date"
                                 id="end_date"
                                 required
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border"
+                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
                                 value={formData.end_date}
                                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                             />

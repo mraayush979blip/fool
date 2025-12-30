@@ -25,13 +25,38 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Fix for input visibility */
-input, textarea, select {
-  color: #171717 !important; /* Force dark text for readability */
+/* Robust fix for input visibility across all browsers */
+input,
+textarea,
+select,
+input::placeholder,
+textarea::placeholder {
+  color: #111827 !important;
+  /* text-gray-900 */
+  opacity: 1 !important;
+}
+
+/* Ensure background is white if text is dark */
+input,
+textarea,
+select {
+  background-color: #ffffff !important;
 }
 
 @media (prefers-color-scheme: dark) {
-  input, textarea, select {
-    color: #ededed !important; /* Light text for dark mode */
+
+  input,
+  textarea,
+  select {
+    color: #f9fafb !important;
+    /* text-gray-50 */
+    background-color: #1f2937 !important;
+    /* text-gray-800 */
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af !important;
+    /* text-gray-400 */
   }
 }
