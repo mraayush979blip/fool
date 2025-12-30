@@ -28,7 +28,7 @@ export default function LoginPage() {
             // Add timeout to prevent hanging
             const loginPromise = signIn(email, password);
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Login timeout - please try again')), 10000)
+                setTimeout(() => reject(new Error('Login timeout - please check your connection and try again')), 30000)
             );
 
             await Promise.race([loginPromise, timeoutPromise]);

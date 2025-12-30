@@ -103,29 +103,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const handleSignIn = async (email: string, password: string) => {
-        const data = await signIn(email, password);
-
-        console.log('Sign in successful - Auth user:', data.user.email);
-
-        // Fetch user details
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
-
-        console.log('Sign in - User data:', userData);
-        console.log('Sign in - Error:', userError);
-
-        if (userData) {
-            setUser(userData as User);
-            console.log('✅ User set successfully:', userData.email, 'Role:', userData.role);
-        } else {
-            console.error('❌ Failed to fetch user from users table');
-            console.error('User ID:', data.user.id);
-            console.error('Error:', userError);
-            throw new Error('User not found in database. Please contact administrator.');
-        }
+        // Only perform the sign in. 
+        // onAuthStateChange listener will handle the userData fetching 
+        // and setting the state to avoid redundant calls.
+        await signIn(email, password);
     };
 
     const handleSignOut = async () => {
