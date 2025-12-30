@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Phase Learning Portal",
-  description: "Phase-Based Learning Management System",
+  title: "Level1",
+  description: "Phase-Based Learning Management System - sab ka sath sab vikas",
 };
 
 export default function RootLayout({

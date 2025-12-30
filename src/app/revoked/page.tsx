@@ -17,7 +17,7 @@ export default function RevokedPage() {
                     Account Revoked
                 </h2>
                 <p className="mt-2 text-center text-sm text-gray-600 font-sans">
-                    Your access to the learning portal has been suspended.
+                    Your access to Level1 has been suspended.
                 </p>
             </div>
 
@@ -36,7 +36,7 @@ export default function RevokedPage() {
                             </p>
                             <ul className="list-disc list-inside text-sm space-y-2 text-gray-600">
                                 <li>Contact administrator: <span className="font-bold text-gray-900">mraayush979@gmail.com</span></li>
-                                <li>Provide your full name and number.</li>
+                                <li>Provide your full name and number ,also reason.</li>
                                 <li>The administrator will review your situation and can manually restore your account.</li>
                             </ul>
                         </div>

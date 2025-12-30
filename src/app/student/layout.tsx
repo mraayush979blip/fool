@@ -5,6 +5,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, User as UserIcon, BookOpen, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Level1",
+    description: "Phase-Based Learning Management System - sab ka sath sab vikas",
+};
 
 export default function StudentLayout({
     children,
@@ -26,7 +32,7 @@ export default function StudentLayout({
                                         <BookOpen className="h-6 w-6 text-white" />
                                     </div>
                                     <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                                        Learning Portal
+                                        Level1
                                     </span>
                                 </Link>
 
@@ -34,8 +40,8 @@ export default function StudentLayout({
                                     <Link
                                         href="/student"
                                         className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${pathname === '/student'
-                                                ? 'bg-blue-50 text-blue-700'
-                                                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                                            ? 'bg-blue-50 text-blue-700'
+                                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                                             }`}
                                     >
                                         Dashboard
@@ -43,8 +49,8 @@ export default function StudentLayout({
                                     <Link
                                         href="/student/compete"
                                         className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors flex items-center ${pathname === '/student/compete'
-                                                ? 'bg-yellow-50 text-yellow-700'
-                                                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                                            ? 'bg-yellow-50 text-yellow-700'
+                                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                                             }`}
                                     >
                                         <Trophy className="h-4 w-4 mr-1.5" />
@@ -80,7 +86,7 @@ export default function StudentLayout({
                 <footer className="bg-white border-t border-gray-200 py-8">
                     <div className="max-w-7xl mx-auto px-4 text-center">
                         <p className="text-sm text-gray-500">
-                            &copy; {new Date().getFullYear()} Phase-Based Learning Portal. All rights reserved.
+                            &copy; {new Date().getFullYear()} Level1 - sab ka sath sab vikas. All rights reserved.
                         </p>
                     </div>
                 </footer>

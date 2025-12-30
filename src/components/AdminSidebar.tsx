@@ -28,7 +28,8 @@ export default function AdminSidebar() {
         <div className="flex flex-col w-64 bg-white border-r border-gray-200">
             <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
                 <div className="flex items-center flex-shrink-0 px-4 mb-8">
-                    <span className="text-xl font-bold text-blue-600">Admin Portal</span>
+                    <span className="text-xl font-black text-gray-900 tracking-tighter">Level1</span>
+                    <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold text-blue-600 bg-blue-50 rounded uppercase tracking-wider">Admin</span>
                 </div>
                 <nav className="flex-1 px-2 space-y-1 bg-white">
                     {navItems.map((item) => {

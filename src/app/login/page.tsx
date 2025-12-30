@@ -46,9 +46,12 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
             <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-                <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
-                    Phase Learning Portal
+                <h1 className="text-4xl font-black text-center mb-1 text-gray-900 tracking-tighter">
+                    Level1
                 </h1>
+                <p className="text-center text-sm text-blue-600 font-medium mb-8 uppercase tracking-widest">
+                    sab ka sath sab vikas
+                </p>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -97,7 +100,7 @@ export default function LoginPage() {
                 </form>
 
                 <p className="mt-6 text-center text-sm text-gray-600">
-                    Phase-Based Learning Management System
+                    Level1 - sab ka sath sab vikas
                 </p>
             </div>
         </div>
