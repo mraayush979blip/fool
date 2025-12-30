@@ -3,17 +3,18 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// During build time (prerendering), these might be missing.
-// We provide a fallback to avoid crashing the build, but warn the developer.
-if (!supabaseUrl || !supabaseAnonKey) {
+// Strict check for valid URL format to prevent crashing the build
+const isValidUrl = supabaseUrl && (supabaseUrl.startsWith('http://') || supabaseUrl.startsWith('https://'));
+
+if (!isValidUrl) {
     if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
-        console.warn('⚠️ [Supabase] Missing environment variables. Static generation might fail if these are required.');
+        console.warn('⚠️ [Supabase] Missing or invalid NEXT_PUBLIC_SUPABASE_URL. Using placeholder for build.');
     }
 }
 
 export const supabase = createClient(
-    supabaseUrl || 'https://placeholder.supabase.co',
-    supabaseAnonKey || 'placeholder-key'
+    isValidUrl ? supabaseUrl : 'https://placeholder.supabase.co',
+    (isValidUrl && supabaseAnonKey) ? supabaseAnonKey : 'placeholder-key'
 );
 
 // Helper function to get current user
