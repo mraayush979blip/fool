@@ -55,10 +55,10 @@ export default function StudentDashboard() {
 
                 if (phasesError) throw phasesError;
 
-                // Filter out ended and paused phases
+                // Only show LIVE phases
                 const livePhases = (phasesData || []).filter(phase => {
                     const status = getPhaseStatus(phase.start_date, phase.end_date, phase.is_paused);
-                    return status === 'live' || status === 'upcoming';
+                    return status === 'live';
                 });
 
                 setPhases(livePhases);

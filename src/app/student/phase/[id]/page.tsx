@@ -254,6 +254,20 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
     }
 
     const status = getPhaseStatus(phase.start_date, phase.end_date, phase.is_paused);
+
+    if (status === 'upcoming') {
+        return (
+            <div className="max-w-4xl mx-auto px-4 py-12 text-center">
+                <Clock className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                <h1 className="text-2xl font-bold text-gray-900">Phase Not Started</h1>
+                <p className="mt-2 text-gray-600">This phase is scheduled to start on {new Date(phase.start_date).toLocaleDateString()}. Please check back then!</p>
+                <Link href="/student" className="mt-6 inline-flex items-center text-blue-600 hover:underline">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                </Link>
+            </div>
+        );
+    }
+
     if (status === 'ended') {
         return (
             <div className="max-w-4xl mx-auto px-4 py-12 text-center">
