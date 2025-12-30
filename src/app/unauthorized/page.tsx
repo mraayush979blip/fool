@@ -10,7 +10,7 @@ export default function UnauthorizedPage() {
                 </div>
                 <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Access Denied</h1>
                 <p className="text-lg text-gray-600">
-                    You don't have permission to access this page. Please contact your administrator if you believe this is an error.
+                    You don&apos;t have permission to access this page. Please contact your administrator if you believe this is an error.
                 </p>
                 <div className="pt-6">
                     <Link
