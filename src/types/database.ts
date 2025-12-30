@@ -21,6 +21,9 @@ export interface User {
   roll_number?: string;
   batch?: string;
   phone?: string;
+  current_streak?: number;
+  max_streak?: number;
+  last_activity_date?: string;
 }
 
 // Phase Interface

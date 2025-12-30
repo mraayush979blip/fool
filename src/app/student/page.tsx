@@ -45,6 +45,9 @@ export default function StudentDashboard() {
                     return;
                 }
 
+                // Update streak on dashboard load
+                await supabase.rpc('update_student_streak', { student_uuid: user.id });
+
                 // Fetch phases
                 const { data: phasesData, error: phasesError } = await supabase
                     .from('phases')
