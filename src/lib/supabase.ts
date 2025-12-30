@@ -27,6 +27,14 @@ if (!supabaseAnonKey || supabaseAnonKey === 'placeholder-key') {
     }
 }
 
+if (typeof window !== 'undefined') {
+    const maskedUrl = supabaseUrl ? (supabaseUrl.length > 15 ? `${supabaseUrl.substring(0, 15)}...` : supabaseUrl) : 'MISSING';
+    const maskedKey = supabaseAnonKey ? `${supabaseAnonKey.substring(0, 8)}...` : 'MISSING';
+    console.log(`📡 [Supabase] Connecting to: ${maskedUrl}`);
+    console.log(`🔑 [Supabase] Key starting with: ${maskedKey}`);
+}
+
+
 export const supabase = createClient(
     (isValidUrl ? supabaseUrl : 'https://placeholder.supabase.co') as string,
     ((isValidUrl && supabaseAnonKey) ? supabaseAnonKey : 'placeholder-key') as string,

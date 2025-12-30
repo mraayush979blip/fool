@@ -24,35 +24,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Check active session
         const checkUser = async () => {
             try {
+                console.log('🔄 [Auth] Starting session check...');
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-                if (sessionError) return;
+                if (sessionError) {
+                    console.error('❌ [Auth] Session error:', sessionError.message);
+                    return;
+                }
 
                 if (session?.user) {
                     setSupabaseUser(session.user);
+                    console.log('👤 [Auth] Session found for:', session.user.email);
 
-                    const { data: userData } = await supabase
+                    const { data: userData, error: userError } = await supabase
                         .from('users')
                         .select('*')
                         .eq('id', session.user.id)
                         .single();
 
+                    if (userError) {
+                        console.error('❌ [Auth] Database profile fetch error:', userError.message);
+                    }
+
                     if (userData) {
                         setUser(userData as User);
+                        console.log('✅ [Auth] Profile loaded successfully');
                     } else {
+                        console.error('⚠️ [Auth] User not in users table. Signing out.');
                         await supabase.auth.signOut();
                     }
+                } else {
+                    console.log('ℹ️ [Auth] No active session found');
                 }
-            } catch (error) {
-                // Silently handle check errors
+            } catch (error: any) {
+                console.error('🔴 [Auth] Unexpected error during checkUser:', error.message || error);
             } finally {
                 setLoading(false);
             }
         };
 
         const timeout = setTimeout(() => {
+            console.warn('⚠️ [Auth] Session check timed out');
             setLoading(false);
-        }, 10000);
+        }, 15000);
 
         checkUser().finally(() => clearTimeout(timeout));
 
