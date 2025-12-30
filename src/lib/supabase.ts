@@ -36,7 +36,21 @@ if (typeof window !== 'undefined') {
 
 export const supabase = createClient(
     (isValidUrl ? supabaseUrl : 'https://placeholder.supabase.co') as string,
-    ((isValidUrl && supabaseAnonKey) ? supabaseAnonKey : 'placeholder-key') as string
+    ((isValidUrl && supabaseAnonKey) ? supabaseAnonKey : 'placeholder-key') as string,
+    {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+        },
+        global: {
+            headers: { 'x-client-info': 'phase-learning-portal' }
+        },
+        // Disable Realtime to prevent potential connection hangs
+        realtime: {
+            timeout: 20000
+        }
+    }
 );
 
 // Helper function to get current user
