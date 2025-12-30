@@ -11,8 +11,16 @@ if (supabaseUrl && !supabaseUrl.startsWith('http')) {
 const isValidUrl = supabaseUrl && (supabaseUrl.startsWith('http://') || supabaseUrl.startsWith('https://'));
 
 if (!isValidUrl) {
+    if (typeof window === 'undefined') {
+        if (process.env.NODE_ENV === 'production') {
+            console.warn('⚠️ [Supabase Admin] Missing or invalid NEXT_PUBLIC_SUPABASE_URL. Using placeholder for build.');
+        }
+    }
+}
+
+if (!supabaseServiceRoleKey || supabaseServiceRoleKey === 'placeholder-key') {
     if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
-        console.warn('⚠️ [Supabase Admin] Missing or invalid NEXT_PUBLIC_SUPABASE_URL. Using placeholder for build.');
+        console.warn('⚠️ [Supabase Admin] SUPABASE_SERVICE_ROLE_KEY is missing or invalid!');
     }
 }
 

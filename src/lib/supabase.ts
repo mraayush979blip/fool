@@ -12,8 +12,18 @@ if (supabaseUrl && !supabaseUrl.startsWith('http')) {
 const isValidUrl = supabaseUrl && (supabaseUrl.startsWith('http://') || supabaseUrl.startsWith('https://'));
 
 if (!isValidUrl) {
-    if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
-        console.warn('⚠️ [Supabase] Missing or invalid NEXT_PUBLIC_SUPABASE_URL. Using placeholder for build.');
+    if (process.env.NODE_ENV === 'production') {
+        if (typeof window === 'undefined') {
+            console.warn('⚠️ [Supabase] Missing or invalid NEXT_PUBLIC_SUPABASE_URL. Using placeholder for build.');
+        } else {
+            console.error('❌ [Supabase] NEXT_PUBLIC_SUPABASE_URL is missing or invalid! Check your Vercel project settings.');
+        }
+    }
+}
+
+if (!supabaseAnonKey || supabaseAnonKey === 'placeholder-key') {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+        console.error('❌ [Supabase] NEXT_PUBLIC_SUPABASE_ANON_KEY is missing or invalid! Check your Vercel project settings.');
     }
 }
 
