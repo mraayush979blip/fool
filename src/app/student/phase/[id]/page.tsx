@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import YouTube from 'react-youtube';
+import { getPhaseStatus } from '@/lib/utils';
 
 interface PhasePageProps {
     params: Promise<{ id: string }>;
@@ -44,6 +45,15 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         const fetchPhaseData = async () => {
             setLoading(true);
             try {
+                // Check if student should be revoked (self-check)
+                const { data: isRevoked, error: revokeError } = await supabase.rpc('check_and_revoke_self');
+                if (revokeError) {
+                    console.error('Error in self-revocation check:', revokeError);
+                } else if (isRevoked) {
+                    window.location.href = '/revoked';
+                    return;
+                }
+
                 const { data: phaseData, error: phaseError } = await supabase
                     .from('phases')
                     .select('*')
@@ -223,6 +233,33 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
                 <h1 className="text-2xl font-bold text-gray-900">Phase Not Found</h1>
                 <p className="mt-2 text-gray-600">The phase you are looking for does not exist or has been removed.</p>
+                <Link href="/student" className="mt-6 inline-flex items-center text-blue-600 hover:underline">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                </Link>
+            </div>
+        );
+    }
+
+    if (phase.is_paused) {
+        return (
+            <div className="max-w-4xl mx-auto px-4 py-12 text-center">
+                <Clock className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                <h1 className="text-2xl font-bold text-gray-900">Phase Paused</h1>
+                <p className="mt-2 text-gray-600">This phase has been temporarily paused by the instructor. Please check back later.</p>
+                <Link href="/student" className="mt-6 inline-flex items-center text-blue-600 hover:underline">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                </Link>
+            </div>
+        );
+    }
+
+    const status = getPhaseStatus(phase.start_date, phase.end_date, phase.is_paused);
+    if (status === 'ended') {
+        return (
+            <div className="max-w-4xl mx-auto px-4 py-12 text-center">
+                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                <h1 className="text-2xl font-bold text-gray-900">Phase Ended</h1>
+                <p className="mt-2 text-gray-600">The deadline for this phase has passed. You can no longer access this assignment.</p>
                 <Link href="/student" className="mt-6 inline-flex items-center text-blue-600 hover:underline">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
                 </Link>

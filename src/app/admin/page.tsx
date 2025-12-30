@@ -31,6 +31,26 @@ export default function AdminDashboard() {
         fetchDashboardStats();
     }, []);
 
+    const handleSyncRevocation = async () => {
+        if (!confirm('Are you sure you want to sync revocations? This will revoke access for all students who have missed deadlines for ended phases.')) return;
+
+        setLoading(true);
+        try {
+            const { data, error } = await supabase.rpc('check_and_revoke_students');
+            if (error) throw error;
+
+            const { revoked_count } = data as { revoked_count: number };
+            alert(`Sync complete! ${revoked_count} students were revoked.`);
+            fetchDashboardStats();
+        } catch (error) {
+            console.error('Error syncing revocations:', error);
+            alert('Error syncing revocations: The SQL function check_and_revoke_students() might not be installed in Supabase Yet. Please run the provided SQL script first.');
+        } finally {
+            setLoading(true); // Refetching stats will set it to false
+            fetchDashboardStats();
+        }
+    };
+
     const fetchDashboardStats = async () => {
         try {
             // Fetch total students
@@ -249,6 +269,17 @@ export default function AdminDashboard() {
                             </div>
                             <span className="text-indigo-300 group-hover:text-indigo-600 transition-colors">→</span>
                         </Link>
+
+                        <button
+                            onClick={handleSyncRevocation}
+                            className="w-full flex items-center justify-between p-4 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors group mt-4 border border-rose-100"
+                        >
+                            <div className="flex items-center">
+                                <ShieldAlert className="h-5 w-5 text-rose-600 mr-3" />
+                                <span className="text-sm font-bold text-rose-700">Sync Revocations</span>
+                            </div>
+                            <span className="text-rose-300 group-hover:text-rose-600 transition-colors">↻</span>
+                        </button>
                     </div>
                 </div>
             </div>

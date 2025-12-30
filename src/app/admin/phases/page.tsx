@@ -16,6 +16,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { Phase } from '@/types/database';
 import { format } from 'date-fns';
+import { cn, getPhaseStatus } from '@/lib/utils';
 
 export default function PhaseListPage() {
     const [phases, setPhases] = useState<Phase[]>([]);
@@ -160,13 +161,15 @@ export default function PhaseListPage() {
                                                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                                             Paused
                                                         </span>
-                                                    ) : phase.status === 'live' ? (
-                                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                            Live
-                                                        </span>
                                                     ) : (
-                                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                                            {phase.status}
+                                                        <span className={cn(
+                                                            "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                                                            getPhaseStatus(phase.start_date, phase.end_date, phase.is_paused) === 'live' ? "bg-green-100 text-green-800" :
+                                                                getPhaseStatus(phase.start_date, phase.end_date, phase.is_paused) === 'upcoming' ? "bg-blue-100 text-blue-800" :
+                                                                    getPhaseStatus(phase.start_date, phase.end_date, phase.is_paused) === 'ended' ? "bg-red-100 text-red-800" :
+                                                                        "bg-gray-100 text-gray-800"
+                                                        )}>
+                                                            {getPhaseStatus(phase.start_date, phase.end_date, phase.is_paused)}
                                                         </span>
                                                     )}
                                                 </div>

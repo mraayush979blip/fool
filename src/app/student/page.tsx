@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import { getPhaseStatus } from '@/lib/utils';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
@@ -35,15 +36,32 @@ export default function StudentDashboard() {
             if (!user) return;
             setLoading(true);
             try {
+                // Check if student should be revoked (self-check)
+                const { data: isRevoked, error: revokeError } = await supabase.rpc('check_and_revoke_self');
+                if (revokeError) {
+                    console.error('Error in self-revocation check:', revokeError);
+                } else if (isRevoked) {
+                    window.location.href = '/revoked';
+                    return;
+                }
+
                 // Fetch phases
                 const { data: phasesData, error: phasesError } = await supabase
                     .from('phases')
                     .select('*')
                     .eq('is_active', true)
+                    .eq('is_paused', false)
                     .order('phase_number', { ascending: true });
 
                 if (phasesError) throw phasesError;
-                setPhases(phasesData || []);
+
+                // Filter out ended and paused phases
+                const livePhases = (phasesData || []).filter(phase => {
+                    const status = getPhaseStatus(phase.start_date, phase.end_date, phase.is_paused);
+                    return status === 'live' || status === 'upcoming';
+                });
+
+                setPhases(livePhases);
 
                 // Fetch student stats
                 const { data: userData, error: userError } = await supabase
