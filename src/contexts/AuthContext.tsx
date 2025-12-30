@@ -25,6 +25,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const checkUser = async () => {
             try {
                 console.log('🔄 [Auth] Starting session check...');
+
+                // Direct fetch test to verify connectivity
+                if (typeof window !== 'undefined') {
+                    try {
+                        const healthUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()?.startsWith('http')
+                            ? process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+                            : `https://${process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()}.supabase.co`}/auth/v1/health`;
+
+                        console.log('📡 [Auth] Testing direct API reaching:', healthUrl);
+                        const res = await fetch(healthUrl);
+                        console.log('✅ [Auth] Direct API reachable - Status:', res.status);
+                    } catch (fErr: any) {
+                        console.error('🔴 [Auth] DIRECT FETCH FAILED! This usually means an AdBlocker or VPN is blocking the API.');
+                        console.error('Fetch Error:', fErr.message);
+                    }
+                }
+
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
                 if (sessionError) {
