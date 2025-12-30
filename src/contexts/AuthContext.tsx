@@ -24,45 +24,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Check active session
         const checkUser = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                console.log('🔄 [Auth] Starting session check...');
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+                if (sessionError) {
+                    console.error('❌ [Auth] Session error:', sessionError.message);
+                    return;
+                }
 
                 if (session?.user) {
                     setSupabaseUser(session.user);
+                    console.log('👤 [Auth] Session found for:', session.user.email);
 
                     // Fetch user details from users table
+                    console.log('📡 [Auth] Fetching profile from database...');
                     const { data: userData, error: userError } = await supabase
                         .from('users')
                         .select('*')
                         .eq('id', session.user.id)
                         .single();
 
-                    console.log('Initial check - Session user:', session.user.email);
-                    console.log('Initial check - User data:', userData);
-                    console.log('Initial check - Error:', userError);
+                    if (userError) {
+                        console.error('❌ [Auth] Database profile fetch error:', userError.message);
+                        console.error('Error Code:', userError.code);
+                    }
 
                     if (userData) {
                         setUser(userData as User);
+                        console.log('✅ [Auth] Profile loaded successfully');
                     } else {
-                        console.error('❌ User not found in users table!');
-                        console.error('Email:', session.user.email);
-                        console.error('ID:', session.user.id);
-                        console.error('Error:', userError);
-                        // Sign out if user not found in database
+                        console.error('⚠️ [Auth] User not in users table. Sync required.');
                         await supabase.auth.signOut();
                     }
+                } else {
+                    console.log('ℹ️ [Auth] No active session found');
                 }
-            } catch (error) {
-                console.error('Error checking user:', error);
+            } catch (error: any) {
+                console.error('🔴 [Auth] Unexpected error during checkUser:', error.message || error);
             } finally {
                 setLoading(false);
             }
         };
 
-        // Add timeout to prevent infinite loading
+        // Add timeout to prevent infinite loading (increased to 15s for diagnostics)
         const timeout = setTimeout(() => {
-            console.warn('Auth check timeout - setting loading to false');
+            console.warn('⚠️ [Auth] session check timed out after 15s');
             setLoading(false);
-        }, 5000);
+        }, 15000);
 
         checkUser().finally(() => clearTimeout(timeout));
 
