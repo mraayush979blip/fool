@@ -5,12 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, User as UserIcon, BookOpen, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Metadata } from 'next';
-
-export const metadata: Metadata = {
-    title: "Level1",
-    description: "Phase-Based Learning Management System - sab ka sath sab vikas",
-};
 
 export default function StudentLayout({
     children,
