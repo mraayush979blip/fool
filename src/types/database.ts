@@ -41,6 +41,7 @@ export interface Phase {
   is_paused: boolean;
   pause_reason?: string;
   paused_at?: string;
+  min_seconds_required: number;
   created_at: string;
   updated_at: string;
 }

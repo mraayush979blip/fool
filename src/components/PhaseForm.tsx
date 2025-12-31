@@ -33,6 +33,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
         start_date: new Date().toISOString().split('T')[0],
         end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         is_active: true,
+        min_seconds_required: 0,
     });
 
     useEffect(() => {
@@ -207,6 +208,26 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 onChange={(e) => setFormData({ ...formData, assignment_resource_url: e.target.value })}
                             />
                         </div>
+                    </div>
+
+                    <div className="sm:col-span-6">
+                        <label htmlFor="min_seconds_required" className="block text-sm font-bold text-gray-700">
+                            Minimum Time Spent (Minutes) to Unlock Assignment
+                        </label>
+                        <div className="mt-1 flex items-center">
+                            <input
+                                type="number"
+                                name="min_seconds_required"
+                                id="min_seconds_required"
+                                min="0"
+                                placeholder="e.g. 30"
+                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
+                                value={formData.min_seconds_required ? Math.floor(formData.min_seconds_required / 60) : 0}
+                                onChange={(e) => setFormData({ ...formData, min_seconds_required: parseInt(e.target.value) * 60 })}
+                            />
+                            <span className="ml-3 text-sm text-gray-500">minutes</span>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-400 italic">Students must spend at least this much time on the phase page before they can submit.</p>
                     </div>
 
                     <div className="sm:col-span-6 border-t border-gray-100 pt-6">

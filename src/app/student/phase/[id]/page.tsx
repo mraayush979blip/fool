@@ -42,6 +42,9 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
     const lastBeatRef = useRef<number>(Date.now());
     const [timeSpent, setTimeSpent] = useState(0);
 
+    const isUnlocked = phase ? (timeSpent >= (phase.min_seconds_required || 0)) : false;
+    const remainingSeconds = phase ? Math.max(0, (phase.min_seconds_required || 0) - timeSpent) : 0;
+
     useEffect(() => {
         const fetchPhaseData = async () => {
             setLoading(true);
@@ -125,14 +128,22 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                         .single();
 
                     if (existing) {
+                        const newTotal = existing.total_time_spent_seconds + diff;
                         await supabase
                             .from('student_phase_activity')
                             .update({
-                                total_time_spent_seconds: existing.total_time_spent_seconds + diff,
+                                total_time_spent_seconds: newTotal,
                                 last_activity_at: new Date().toISOString()
                             })
                             .eq('id', existing.id);
-                        setTimeSpent(existing.total_time_spent_seconds + diff);
+                        setTimeSpent(newTotal);
+
+                        // Check if this update unlocks the assignment
+                        if (phase.min_seconds_required > 0 &&
+                            existing.total_time_spent_seconds < phase.min_seconds_required &&
+                            newTotal >= phase.min_seconds_required) {
+                            setSuccess('Congratulations! You have spent enough time to unlock the assignment submission.');
+                        }
                     } else {
                         await supabase
                             .from('student_phase_activity')
@@ -143,6 +154,10 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                 last_activity_at: new Date().toISOString()
                             });
                         setTimeSpent(diff);
+
+                        if (phase.min_seconds_required > 0 && diff >= phase.min_seconds_required) {
+                            setSuccess('Congratulations! You have spent enough time to unlock the assignment submission.');
+                        }
                     }
 
                     // Also update global user time
@@ -188,7 +203,6 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
             if (updateError) throw updateError;
             setVideoCompleted(true);
-            setSuccess('Great job! Video completed. You can now submit your assignment.');
 
             // Log activity
             await supabase.from('activity_logs').insert({
@@ -232,7 +246,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         e.preventDefault();
         if (!user) return;
 
-        if (!videoCompleted) {
+        if (!isUnlocked) {
             setError('Please complete the video lecture before submitting your assignment.');
             return;
         }
@@ -355,10 +369,10 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
                 </Link>
                 <div className="flex items-center space-x-4">
-                    {videoCompleted && (
+                    {isUnlocked && (
                         <div className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
                             <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Video Completed
+                            Assignment Unlocked
                         </div>
                     )}
                     <div className="flex items-center text-sm text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-100 shadow-sm">
@@ -432,11 +446,11 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                             Submit Assignment
                         </h2>
 
-                        {!videoCompleted && (
+                        {!isUnlocked && phase?.min_seconds_required > 0 && (
                             <div className="mb-6 p-4 bg-orange-50 border border-orange-100 rounded-xl flex items-start">
                                 <AlertCircle className="h-5 w-5 text-orange-600 mr-3 shrink-0 mt-0.5" />
                                 <p className="text-sm text-orange-800">
-                                    <strong>Video Required:</strong> Please watch the entire lecture video to unlock the assignment submission.
+                                    <strong>Video Required:</strong> Please complete the video lecture before submitting your assignment.
                                 </p>
                             </div>
                         )}
@@ -447,7 +461,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         type="button"
-                                        disabled={!videoCompleted}
+                                        disabled={!isUnlocked}
                                         onClick={() => setSubmissionType('github')}
                                         className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center ${submissionType === 'github'
                                             ? 'bg-blue-600 text-white border-blue-600 shadow-md'
@@ -458,7 +472,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                     </button>
                                     <button
                                         type="button"
-                                        disabled={!videoCompleted}
+                                        disabled={!isUnlocked}
                                         onClick={() => setSubmissionType('file')}
                                         className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center ${submissionType === 'file'
                                             ? 'bg-blue-600 text-white border-blue-600 shadow-md'
@@ -480,7 +494,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                         <input
                                             id="githubUrl"
                                             type="url"
-                                            disabled={!videoCompleted}
+                                            disabled={!isUnlocked}
                                             required={submissionType === 'github'}
                                             placeholder="https://github.com/user/repo"
                                             value={githubUrl}
@@ -500,7 +514,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                 <textarea
                                     id="notes"
                                     rows={4}
-                                    disabled={!videoCompleted}
+                                    disabled={!isUnlocked}
                                     placeholder="Any additional information..."
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
@@ -524,7 +538,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
                             <button
                                 type="submit"
-                                disabled={submitting || !videoCompleted}
+                                disabled={submitting || !isUnlocked}
                                 className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
                             >
                                 {submitting ? (
