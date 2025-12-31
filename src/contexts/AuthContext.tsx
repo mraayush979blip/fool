@@ -24,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Check active session
         const checkUser = async () => {
             try {
+                setLoading(true);
                 console.log('🔄 [Auth] Starting session check...');
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -50,8 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         setUser(userData as User);
                         console.log('✅ [Auth] Profile loaded successfully');
                     } else {
-                        console.error('⚠️ [Auth] User not in users table. Signing out.');
-                        await supabase.auth.signOut();
+                        console.warn('⚠️ [Auth] User not in users table. NOT signing out to avoid loops.');
+                        // Note: We don't sign out automatically here anymore.
+                        // This allows transient issues or manual fixes without losing the session.
                     }
                 } else {
                     console.log('ℹ️ [Auth] No active session found');
@@ -73,8 +75,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
+                console.log(`🔔 [Auth] State change: ${event}`);
+
                 if (session?.user) {
                     setSupabaseUser(session.user);
+                    setLoading(true); // Ensure loading is true while fetching profile
 
                     // Fetch user details
                     const { data: userData, error: userError } = await supabase
@@ -83,21 +88,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         .eq('id', session.user.id)
                         .single();
 
-                    console.log('Auth state change - User data:', userData);
-                    console.log('Auth state change - Error:', userError);
+                    console.log('Auth state change - User data found:', !!userData);
 
                     if (userData) {
                         setUser(userData as User);
                     } else {
                         console.error('User not found in users table for:', session.user.email);
                         console.error('User ID:', session.user.id);
-                        console.error('Error details:', userError);
+                        if (userError) console.error('Error details:', userError);
+                        setUser(null);
                     }
+                    setLoading(false);
                 } else {
                     setSupabaseUser(null);
                     setUser(null);
+                    setLoading(false);
                 }
-                setLoading(false);
             }
         );
 
@@ -107,10 +113,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const handleSignIn = async (email: string, password: string) => {
-        // Only perform the sign in. 
-        // onAuthStateChange listener will handle the userData fetching 
-        // and setting the state to avoid redundant calls.
-        await signIn(email, password);
+        try {
+            setLoading(true);
+            await signIn(email, password);
+
+            // Wait a bit for onAuthStateChange to trigger and fetch user
+            // or manually fetch it here for a faster/more reliable response to the caller
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (authUser) {
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', authUser.id)
+                    .single();
+
+                if (userData) {
+                    setUser(userData as User);
+                }
+            }
+        } catch (error) {
+            setLoading(false);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSignOut = async () => {

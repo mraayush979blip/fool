@@ -30,6 +30,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
     const [phase, setPhase] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [videoCompleted, setVideoCompleted] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [submissionType, setSubmissionType] = useState<'github' | 'file'>('github');
     const [githubUrl, setGithubUrl] = useState('');
@@ -80,13 +81,14 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 // Fetch activity stats
                 const { data: activityData } = await supabase
                     .from('student_phase_activity')
-                    .select('total_time_spent_seconds')
+                    .select('total_time_spent_seconds, video_completed')
                     .eq('phase_id', id)
                     .eq('student_id', user?.id)
                     .single();
 
                 if (activityData) {
                     setTimeSpent(activityData.total_time_spent_seconds);
+                    setVideoCompleted(activityData.video_completed || false);
                 }
 
             } catch (err: any) {
@@ -168,9 +170,72 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         return () => clearInterval(interval);
     }, [phase, user, id]);
 
+    const handleVideoEnd = async () => {
+        if (!user || videoCompleted) return;
+
+        try {
+            console.log('✅ Video completed, updating database...');
+            const { error: updateError } = await supabase
+                .from('student_phase_activity')
+                .upsert({
+                    phase_id: id,
+                    student_id: user.id,
+                    video_completed: true,
+                    last_activity_at: new Date().toISOString()
+                }, {
+                    onConflict: 'student_id,phase_id'
+                });
+
+            if (updateError) throw updateError;
+            setVideoCompleted(true);
+            setSuccess('Great job! Video completed. You can now submit your assignment.');
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+                student_id: user.id,
+                phase_id: id,
+                activity_type: 'VIDEO_COMPLETED',
+                payload: { video_id: extractVideoId(phase.youtube_url) }
+            });
+        } catch (err) {
+            console.error('Error updating video completion:', err);
+        }
+    };
+
+    const handleDownloadAssignment = async (e: React.MouseEvent, url: string) => {
+        e.preventDefault();
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+
+            // Extract filename from URL or use a default
+            const filename = url.split('/').pop() || 'assignment.pdf';
+            link.download = filename;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+
+            console.log('✅ Direct download triggered for:', filename);
+        } catch (err) {
+            console.error('Download error:', err);
+            // Fallback to opening in new tab
+            window.open(url, '_blank');
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
+
+        if (!videoCompleted) {
+            setError('Please complete the video lecture before submitting your assignment.');
+            return;
+        }
 
         setSubmitting(true);
         setError(null);
@@ -289,9 +354,17 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 <Link href="/student" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
                 </Link>
-                <div className="flex items-center text-sm text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-100 shadow-sm">
-                    <Clock className="h-4 w-4 mr-2 text-orange-500" />
-                    <span>Time Spent: {Math.floor(timeSpent / 3600)}h {Math.floor((timeSpent % 3600) / 60)}m</span>
+                <div className="flex items-center space-x-4">
+                    {videoCompleted && (
+                        <div className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Video Completed
+                        </div>
+                    )}
+                    <div className="flex items-center text-sm text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-100 shadow-sm">
+                        <Clock className="h-4 w-4 mr-2 text-orange-500" />
+                        <span>Time Spent: {Math.floor(timeSpent / 3600)}h {Math.floor((timeSpent % 3600) / 60)}m</span>
+                    </div>
                 </div>
             </div>
 
@@ -312,6 +385,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                 <YouTube
                                     videoId={videoId}
                                     className="w-full h-full"
+                                    onEnd={handleVideoEnd}
                                     opts={{
                                         width: '100%',
                                         height: '100%',
@@ -338,14 +412,12 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                             Learning Resources
                         </h2>
                         {phase.assignment_resource_url ? (
-                            <a
-                                href={phase.assignment_resource_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            <button
+                                onClick={(e) => handleDownloadAssignment(e, phase.assignment_resource_url)}
                                 className="inline-flex items-center px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                             >
-                                <ExternalLink className="mr-2 h-4 w-4" /> Download Assignment PDF
-                            </a>
+                                <FileText className="mr-2 h-4 w-4" /> Download Assignment PDF
+                            </button>
                         ) : (
                             <p className="text-gray-500 italic">No additional resources provided.</p>
                         )}
@@ -360,27 +432,38 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                             Submit Assignment
                         </h2>
 
+                        {!videoCompleted && (
+                            <div className="mb-6 p-4 bg-orange-50 border border-orange-100 rounded-xl flex items-start">
+                                <AlertCircle className="h-5 w-5 text-orange-600 mr-3 shrink-0 mt-0.5" />
+                                <p className="text-sm text-orange-800">
+                                    <strong>Video Required:</strong> Please watch the entire lecture video to unlock the assignment submission.
+                                </p>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-3">
                                 <label className="text-sm font-semibold text-gray-700 block">Submission Type</label>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         type="button"
+                                        disabled={!videoCompleted}
                                         onClick={() => setSubmissionType('github')}
                                         className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center ${submissionType === 'github'
                                             ? 'bg-blue-600 text-white border-blue-600 shadow-md'
                                             : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                                            }`}
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
                                     >
                                         <Github className="mr-2 h-4 w-4" /> GitHub
                                     </button>
                                     <button
                                         type="button"
+                                        disabled={!videoCompleted}
                                         onClick={() => setSubmissionType('file')}
                                         className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center ${submissionType === 'file'
                                             ? 'bg-blue-600 text-white border-blue-600 shadow-md'
                                             : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                                            }`}
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
                                     >
                                         <FileText className="mr-2 h-4 w-4" /> File
                                     </button>
@@ -397,11 +480,12 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                         <input
                                             id="githubUrl"
                                             type="url"
+                                            disabled={!videoCompleted}
                                             required={submissionType === 'github'}
                                             placeholder="https://github.com/user/repo"
                                             value={githubUrl}
                                             onChange={(e) => setGithubUrl(e.target.value)}
-                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-50 disabled:text-gray-400"
                                         />
                                     </div>
                                 </div>
@@ -416,10 +500,11 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                 <textarea
                                     id="notes"
                                     rows={4}
+                                    disabled={!videoCompleted}
                                     placeholder="Any additional information..."
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
-                                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none text-black"
+                                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none text-black disabled:bg-gray-50 disabled:text-gray-400"
                                 />
                             </div>
 
@@ -439,7 +524,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
                             <button
                                 type="submit"
-                                disabled={submitting}
+                                disabled={submitting || !videoCompleted}
                                 className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
                             >
                                 {submitting ? (

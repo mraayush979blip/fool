@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -9,8 +9,23 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { signIn } = useAuth();
+    const { signIn, user, loading: authLoading } = useAuth();
     const router = useRouter();
+
+    useEffect(() => {
+        if (!authLoading && user) {
+            console.log('🔄 [Login] Active session detected, auto-redirecting...');
+            router.push('/');
+        }
+    }, [user, authLoading, router]);
+
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -25,15 +40,14 @@ export default function LoginPage() {
                 throw new Error('Supabase URL is not configured in Vercel. Please add NEXT_PUBLIC_SUPABASE_URL to your Project Settings.');
             }
 
-            // Add timeout to prevent hanging
-            const loginPromise = signIn(email, password);
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Login timeout - please check your connection and try again')), 30000)
-            );
+            await signIn(email, password);
 
-            await Promise.race([loginPromise, timeoutPromise]);
+            console.log('Login successful, checking user profile...');
 
-            console.log('Login successful, redirecting to home...');
+            // The AuthContext handleSignIn now waits for the profile. 
+            // We can add a small delay or check here as well if needed, 
+            // but the improved AuthContext should be enough.
+
             router.push('/');
         } catch (err: any) {
             console.error('Login error:', err);
