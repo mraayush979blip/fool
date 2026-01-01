@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import NeonLoader from '@/components/NeonLoader';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -19,12 +20,9 @@ export default function LoginPage() {
         }
     }, [user, authLoading, router]);
 
+
     if (authLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
+        return <NeonLoader />;
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -61,7 +59,7 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
             <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
                 <h1 className="text-4xl font-black text-center mb-1 text-gray-900 tracking-tighter">
-                    Level1
+                    Levelone
                 </h1>
                 <p className="text-center text-sm text-blue-600 font-medium mb-8 uppercase tracking-widest">
                     sab ka sath sab vikas
@@ -114,7 +112,7 @@ export default function LoginPage() {
                 </form>
 
                 <p className="mt-6 text-center text-sm text-gray-600">
-                    Level1 - sab ka sath sab vikas
+                    Levelone - sab ka sath sab vikas
                 </p>
             </div>
         </div>

@@ -17,7 +17,7 @@ export default function RevokedPage() {
                     Account Revoked
                 </h2>
                 <p className="mt-2 text-center text-sm text-gray-600 font-sans">
-                    Your access to Level1 has been suspended.
+                    Your access to Levelone has been suspended.
                 </p>
             </div>
 

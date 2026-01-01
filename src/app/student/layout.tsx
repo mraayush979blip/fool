@@ -26,7 +26,7 @@ export default function StudentLayout({
                                         <BookOpen className="h-6 w-6 text-white" />
                                     </div>
                                     <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                                        Level1
+                                        Levelone
                                     </span>
                                 </Link>
 
@@ -80,7 +80,7 @@ export default function StudentLayout({
                 <footer className="bg-white border-t border-gray-200 py-8">
                     <div className="max-w-7xl mx-auto px-4 text-center">
                         <p className="text-sm text-gray-500">
-                            &copy; {new Date().getFullYear()} Level1 - sab ka sath sab vikas. All rights reserved.
+                            &copy; {new Date().getFullYear()} Levelone - sab ka sath sab vikas. All rights reserved.
                         </p>
                     </div>
                 </footer>

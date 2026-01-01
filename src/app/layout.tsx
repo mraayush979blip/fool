@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Level1",
+  title: "Levelone",
   description: "Phase-Based Learning Management System - sab ka sath sab vikas",
 };
 
