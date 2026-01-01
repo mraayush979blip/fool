@@ -21,95 +21,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check active session
-        const checkUser = async () => {
-            try {
-                setLoading(true);
-                console.log('🔄 [Auth] Starting session check...');
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        let mounted = true;
 
-                if (sessionError) {
-                    console.error('❌ [Auth] Session error:', sessionError.message);
-                    return;
-                }
+        const initializeAuth = async () => {
+            console.log('🔄 [Auth] Initializing...');
 
-                if (session?.user) {
-                    setSupabaseUser(session.user);
-                    console.log('👤 [Auth] Session found for:', session.user.email);
+            // Listen for auth changes
+            const { data: { subscription } } = supabase.auth.onAuthStateChange(
+                async (event, session) => {
+                    if (!mounted) return;
+                    console.log(`🔔 [Auth] State change: ${event}`);
 
-                    const { data: userData, error: userError } = await supabase
-                        .from('users')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .single();
+                    // Only set loading true if we are changing state or initializing
+                    // Avoid setting it true if we already have a user and it's just a token refresh, 
+                    // unless we need to re-fetch the profile.
 
-                    if (userError) {
-                        console.error('❌ [Auth] Database profile fetch error:', userError.message);
-                    }
+                    if (session?.user) {
+                        try {
+                            const { data: userData, error: userError } = await supabase
+                                .from('users')
+                                .select('*')
+                                .eq('id', session.user.id)
+                                .single();
 
-                    if (userData) {
-                        setUser(userData as User);
-                        console.log('✅ [Auth] Profile loaded successfully');
+                            if (!mounted) return;
+
+                            if (userData) {
+                                console.log('✅ [Auth] Profile loaded');
+                                setUser(userData as User);
+                                setSupabaseUser(session.user);
+                            } else {
+                                console.warn('⚠️ [Auth] User authenticated but profile missing');
+                                // Don't sign out automatically, let UI handle it or waiting for sync
+                                // But do set separate states so we know auth works but db missing
+                                setSupabaseUser(session.user);
+                                setUser(null);
+                            }
+                        } catch (err) {
+                            console.error('❌ [Auth] Error fetching profile:', err);
+                        } finally {
+                            if (mounted) setLoading(false);
+                        }
                     } else {
-                        console.warn('⚠️ [Auth] User not in users table. NOT signing out to avoid loops.');
-                        // Note: We don't sign out automatically here anymore.
-                        // This allows transient issues or manual fixes without losing the session.
+                        // Signed out
+                        if (mounted) {
+                            setUser(null);
+                            setSupabaseUser(null);
+                            setLoading(false);
+                        }
                     }
-                } else {
-                    console.log('ℹ️ [Auth] No active session found');
                 }
-            } catch (error: any) {
-                console.error('🔴 [Auth] Unexpected error during checkUser:', error.message || error);
-            } finally {
-                setLoading(false);
-            }
+            );
+
+            return () => {
+                mounted = false;
+                subscription.unsubscribe();
+            };
         };
 
-        const timeout = setTimeout(() => {
-            console.warn('⚠️ [Auth] Session check timed out');
-            setLoading(false);
-        }, 15000);
-
-        checkUser().finally(() => clearTimeout(timeout));
-
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                console.log(`🔔 [Auth] State change: ${event}`);
-
-                if (session?.user) {
-                    setSupabaseUser(session.user);
-                    setLoading(true); // Ensure loading is true while fetching profile
-
-                    // Fetch user details
-                    const { data: userData, error: userError } = await supabase
-                        .from('users')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .single();
-
-                    console.log('Auth state change - User data found:', !!userData);
-
-                    if (userData) {
-                        setUser(userData as User);
-                    } else {
-                        console.error('User not found in users table for:', session.user.email);
-                        console.error('User ID:', session.user.id);
-                        if (userError) console.error('Error details:', userError);
-                        setUser(null);
-                    }
-                    setLoading(false);
-                } else {
-                    setSupabaseUser(null);
-                    setUser(null);
-                    setLoading(false);
-                }
-            }
-        );
-
-        return () => {
-            subscription.unsubscribe();
-        };
+        initializeAuth();
     }, []);
 
     const handleSignIn = async (email: string, password: string) => {

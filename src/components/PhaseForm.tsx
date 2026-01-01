@@ -9,10 +9,14 @@ import {
     Video,
     FileText,
     CheckCircle2,
-    AlertCircle
+    AlertCircle,
+    Upload,
+    X,
+    Download
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Phase } from '@/types/database';
+import { isValidFileSize, formatFileSize, isValidAssignmentFileType } from '@/utils/validation';
 
 interface PhaseFormProps {
     id?: string;
@@ -23,6 +27,8 @@ export default function PhaseForm({ id }: PhaseFormProps) {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(!!id);
     const [error, setError] = useState<string | null>(null);
+    const [uploadingFile, setUploadingFile] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     const [formData, setFormData] = useState<Partial<Phase>>({
         phase_number: 1,
@@ -30,6 +36,8 @@ export default function PhaseForm({ id }: PhaseFormProps) {
         description: '',
         youtube_url: '',
         assignment_resource_url: '',
+        assignment_file_url: '',
+        allowed_submission_type: 'both',
         start_date: new Date().toISOString().split('T')[0],
         end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         is_active: true,
@@ -66,22 +74,118 @@ export default function PhaseForm({ id }: PhaseFormProps) {
         }
     };
 
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!isValidAssignmentFileType(file)) {
+            setError('Invalid file type. Please upload PDF, JPG, or PNG files only.');
+            return;
+        }
+
+        // Validate file size (2MB limit)
+        if (!isValidFileSize(file, 2)) {
+            setError('File size must be less than 2MB. Current size: ' + formatFileSize(file.size));
+            return;
+        }
+
+        setSelectedFile(file);
+        setError(null);
+    };
+
+    const handleFileUpload = async () => {
+        if (!selectedFile) return null;
+
+        setUploadingFile(true);
+        setError(null);
+
+        try {
+            const fileExt = selectedFile.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `assignment-documents/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('assignment-documents')
+                .upload(filePath, selectedFile, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('assignment-documents')
+                .getPublicUrl(filePath);
+
+            return publicUrl;
+        } catch (error: any) {
+            console.error('Error uploading file:', error);
+            setError('Failed to upload file: ' + error.message);
+            return null;
+        } finally {
+            setUploadingFile(false);
+        }
+    };
+
+    const handleRemoveFile = () => {
+        setSelectedFile(null);
+        setFormData({ ...formData, assignment_file_url: '' });
+    };
+
+    const handleDeleteStoredFile = async (fileUrl: string) => {
+        try {
+            const fileName = fileUrl.split('/').pop();
+            if (!fileName) return;
+
+            const { error } = await supabase.storage
+                .from('assignment-documents')
+                .remove([`assignment-documents/${fileName}`]);
+
+            if (error) console.error('Error deleting file:', error);
+        } catch (error) {
+            console.error('Error deleting stored file:', error);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
         try {
+            // Upload new file if selected
+            let fileUrl = formData.assignment_file_url;
+            if (selectedFile) {
+                const uploadedUrl = await handleFileUpload();
+                if (!uploadedUrl) {
+                    setLoading(false);
+                    return;
+                }
+
+                // Delete old file if exists and we're updating
+                if (id && formData.assignment_file_url) {
+                    await handleDeleteStoredFile(formData.assignment_file_url);
+                }
+
+                fileUrl = uploadedUrl;
+            }
+
+            const dataToSave = {
+                ...formData,
+                assignment_file_url: fileUrl
+            };
+
             if (id) {
                 const { error } = await supabase
                     .from('phases')
-                    .update(formData)
+                    .update(dataToSave)
                     .eq('id', id);
                 if (error) throw error;
             } else {
                 const { error } = await supabase
                     .from('phases')
-                    .insert([formData]);
+                    .insert([dataToSave]);
                 if (error) throw error;
             }
             router.push('/admin/phases');
@@ -194,8 +298,98 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                     </div>
 
                     <div className="sm:col-span-6">
+                        <label htmlFor="allowed_submission_type" className="block text-sm font-bold text-gray-700">
+                            Allowed Submission Type
+                        </label>
+                        <div className="mt-1">
+                            <select
+                                id="allowed_submission_type"
+                                name="allowed_submission_type"
+                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
+                                value={formData.allowed_submission_type || 'both'}
+                                onChange={(e) => setFormData({ ...formData, allowed_submission_type: e.target.value as 'github' | 'file' | 'both' })}
+                            >
+                                <option value="both">Both (GitHub Link & File Upload)</option>
+                                <option value="github">GitHub Link Only</option>
+                                <option value="file">File Upload Only</option>
+                            </select>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">Choose how students are allowed to submit their work for this phase.</p>
+                    </div>
+
+                    <div className="sm:col-span-6">
+                        <label className="block text-sm font-bold text-gray-700">
+                            Assignment Document (PDF or Image)
+                        </label>
+                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors bg-gray-50">
+                            <div className="space-y-1 text-center">
+                                {formData.assignment_file_url || selectedFile ? (
+                                    <div className="flex flex-col items-center">
+                                        <FileText className="mx-auto h-12 w-12 text-blue-500" />
+                                        <div className="mt-4 flex text-sm text-gray-600">
+                                            <p className="font-medium text-blue-600 truncate max-w-xs">
+                                                {selectedFile ? selectedFile.name : formData.assignment_file_url?.split('/').pop()}
+                                            </p>
+                                        </div>
+                                        {selectedFile && (
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {formatFileSize(selectedFile.size)} (Pending Upload)
+                                            </p>
+                                        )}
+                                        <div className="mt-4 flex space-x-4">
+                                            {formData.assignment_file_url && !selectedFile && (
+                                                <a
+                                                    href={formData.assignment_file_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                >
+                                                    <Download className="mr-1.5 h-4 w-4 text-gray-400" />
+                                                    View Current
+                                                </a>
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={handleRemoveFile}
+                                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                            >
+                                                <X className="mr-1.5 h-4 w-4" />
+                                                Remove/Replace
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                                        <div className="flex text-sm text-gray-600 justify-center">
+                                            <label
+                                                htmlFor="file-upload"
+                                                className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                                            >
+                                                <span>Upload a file</span>
+                                                <input
+                                                    id="file-upload"
+                                                    name="file-upload"
+                                                    type="file"
+                                                    className="sr-only"
+                                                    accept=".pdf,image/png,image/jpeg,image/jpg"
+                                                    onChange={handleFileSelect}
+                                                />
+                                            </label>
+                                            <p className="pl-1">or drag and drop</p>
+                                        </div>
+                                        <p className="text-xs text-gray-500">
+                                            PDF, PNG, JPG up to 2MB
+                                        </p>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="sm:col-span-6">
                         <label htmlFor="assignment_resource_url" className="block text-sm font-bold text-gray-700">
-                            Assignment Resource URL (Optional)
+                            Additional Resource URL (Optional)
                         </label>
                         <div className="mt-1">
                             <input

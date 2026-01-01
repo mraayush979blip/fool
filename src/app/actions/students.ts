@@ -6,6 +6,7 @@ interface StudentToImport {
     name: string;
     email: string;
     roll_number: string;
+    phone?: string;
     password: string;
 }
 
@@ -60,6 +61,7 @@ export async function importStudentsAction(students: StudentToImport[]) {
                     email: student.email,
                     name: student.name,
                     roll_number: student.roll_number,
+                    phone: student.phone,
                     role: 'student',
                     status: 'active'
                 });

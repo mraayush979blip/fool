@@ -60,19 +60,28 @@ export default function CSVImportPage() {
 
             const nameIdx = headers.indexOf('name');
             const emailIdx = headers.indexOf('email');
-            const numberIdx = headers.indexOf('number');
+
+            // Allow flexibility in header names
+            const rollNumberIdx = headers.findIndex(h => ['roll_number', 'roll_no', 'rollno', 'roll'].includes(h));
+            const phoneIdx = headers.findIndex(h => ['phone', 'mobile', 'contact', 'number'].includes(h));
             const passwordIdx = headers.indexOf('password');
 
-            if (nameIdx === -1 || emailIdx === -1 || numberIdx === -1 || passwordIdx === -1) {
-                throw new Error('CSV must contain "name", "email", "number", and "password" columns.');
+            if (nameIdx === -1 || emailIdx === -1 || passwordIdx === -1) {
+                throw new Error('CSV must contain at least "name", "email", and "password" columns.');
             }
 
             const studentsToImport = rows.slice(1).map((row, index) => {
                 if (row.length < headers.length) return null;
+
+                // If checking for optional fields, ensure we don't return undefined if column missing
+                const rollVal = rollNumberIdx !== -1 ? row[rollNumberIdx] : '';
+                const phoneVal = phoneIdx !== -1 ? row[phoneIdx] : '';
+
                 return {
                     name: row[nameIdx],
                     email: row[emailIdx],
-                    roll_number: row[numberIdx],
+                    roll_number: rollVal, // Pass whatever is found or empty string
+                    phone: phoneVal,
                     password: row[passwordIdx]
                 };
             }).filter((s): s is any => s !== null);
@@ -117,7 +126,7 @@ export default function CSVImportPage() {
     };
 
     const downloadSample = () => {
-        const csvContent = "name,email,number,password\nJohn Doe,john@example.com,STU001,Student@123\nJane Smith,jane@example.com,STU002,Student@456";
+        const csvContent = "name,email,roll_no,phone,password\nJohn Doe,john@example.com,STU001,9876543210,Student@123\nJane Smith,jane@example.com,STU002,9123456780,Student@456";
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -161,7 +170,8 @@ export default function CSVImportPage() {
                                 Your file must include headers:
                                 <code className="mx-1 font-mono bg-blue-100 px-1 rounded font-bold">name</code>,
                                 <code className="mx-1 font-mono bg-blue-100 px-1 rounded font-bold">email</code>,
-                                <code className="mx-1 font-mono bg-blue-100 px-1 rounded font-bold">number</code>,
+                                <code className="mx-1 font-mono bg-blue-100 px-1 rounded font-bold">roll_no</code>,
+                                <code className="mx-1 font-mono bg-blue-100 px-1 rounded font-bold">phone</code>,
                                 and <code className="mx-1 font-mono bg-blue-100 px-1 rounded font-bold">password</code>.
                             </p>
                             <button

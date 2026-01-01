@@ -13,11 +13,15 @@ import {
     AlertCircle,
     CheckCircle2,
     ArrowLeft,
-    Loader2
+    Loader2,
+    Upload,
+    X,
+    Download
 } from 'lucide-react';
 import Link from 'next/link';
 import YouTube from 'react-youtube';
 import { getPhaseStatus } from '@/lib/utils';
+import { isValidGitHubUrl, isValidFileSize, formatFileSize, isValidAssignmentFileType } from '@/utils/validation';
 
 interface PhasePageProps {
     params: Promise<{ id: string }>;
@@ -37,6 +41,9 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
     const [notes, setNotes] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [uploadingFile, setUploadingFile] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [existingFileUrl, setExistingFileUrl] = useState<string | null>(null);
 
     // Time tracking
     const lastBeatRef = useRef<number>(Date.now());
@@ -79,6 +86,15 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                     setSubmissionType(subData.submission_type);
                     setGithubUrl(subData.github_url || '');
                     setNotes(subData.notes || '');
+                    setExistingFileUrl(subData.file_url || null);
+                } else {
+                    // Set default based on allowed type
+                    if (phaseData.allowed_submission_type === 'file') {
+                        setSubmissionType('file');
+                    } else if (phaseData.allowed_submission_type === 'github') {
+                        setSubmissionType('github');
+                    }
+                    // 'both' defaults to 'github' as per initial state
                 }
 
                 // Fetch activity stats
@@ -242,6 +258,65 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         }
     };
 
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!isValidAssignmentFileType(file)) {
+            setError('Invalid file type. Please upload PDF, JPG, or PNG files only.');
+            return;
+        }
+
+        if (!isValidFileSize(file, 2)) {
+            setError(`File size must be less than 2MB. Current size: ${formatFileSize(file.size)}`);
+            return;
+        }
+
+        setSelectedFile(file);
+        setError(null);
+    };
+
+    const handleRemoveFile = () => {
+        setSelectedFile(null);
+        setExistingFileUrl(null);
+    };
+
+    const handleFileUpload = async () => {
+        if (!selectedFile || !user) return null;
+
+        setUploadingFile(true);
+        setError(null);
+
+        try {
+            const fileExt = selectedFile.name.split('.').pop();
+            // Use a fixed filename to overwrite previous submissions and save storage
+            const fileName = `${user.id}/${id}/submission.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('student-submissions')
+                .upload(filePath, selectedFile, {
+                    cacheControl: '3600',
+                    upsert: true
+                });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('student-submissions')
+                .getPublicUrl(filePath);
+
+            // Add a timestamp to force browser cache refresh just for the display/download URL
+            return `${publicUrl}?t=${Date.now()}`;
+        } catch (error: any) {
+            console.error('Error uploading file:', error);
+            setError('Failed to upload file: ' + error.message);
+            return null;
+        } finally {
+            setUploadingFile(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
@@ -251,11 +326,37 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
             return;
         }
 
-        setSubmitting(true);
         setError(null);
         setSuccess(null);
 
+        // Validation
+        let finalFileUrl = existingFileUrl;
+
+        if (submissionType === 'github') {
+            if (!githubUrl || !isValidGitHubUrl(githubUrl)) {
+                setError('Please enter a valid GitHub repository URL (e.g., https://github.com/username/repo)');
+                return;
+            }
+        } else if (submissionType === 'file') {
+            if (!selectedFile && !existingFileUrl) {
+                setError('Please select a file to upload.');
+                return;
+            }
+        }
+
+        setSubmitting(true);
+
         try {
+            // Upload file if needed
+            if (submissionType === 'file' && selectedFile) {
+                const uploadedUrl = await handleFileUpload();
+                if (!uploadedUrl) {
+                    setSubmitting(false);
+                    return;
+                }
+                finalFileUrl = uploadedUrl;
+            }
+
             const { error: subError } = await supabase
                 .from('submissions')
                 .upsert({
@@ -263,7 +364,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                     phase_id: id,
                     submission_type: submissionType,
                     github_url: submissionType === 'github' ? githubUrl : null,
-                    file_url: submissionType === 'file' ? 'simulated_file_url' : null,
+                    file_url: submissionType === 'file' ? finalFileUrl : null,
                     notes,
                     submitted_at: new Date().toISOString(),
                     status: 'valid'
@@ -274,6 +375,8 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
             if (subError) throw subError;
 
             setSuccess('Assignment submitted successfully!');
+            if (finalFileUrl) setExistingFileUrl(finalFileUrl);
+            setSelectedFile(null);
 
             // Log activity
             await supabase.from('activity_logs').insert({
@@ -425,7 +528,14 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                             <FileText className="mr-2 h-5 w-5 text-blue-600" />
                             Learning Resources
                         </h2>
-                        {phase.assignment_resource_url ? (
+                        {phase.assignment_file_url ? (
+                            <button
+                                onClick={(e) => handleDownloadAssignment(e, phase.assignment_file_url)}
+                                className="inline-flex items-center px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                            >
+                                <FileText className="mr-2 h-4 w-4" /> Download Assignment Document
+                            </button>
+                        ) : phase.assignment_resource_url ? (
                             <button
                                 onClick={(e) => handleDownloadAssignment(e, phase.assignment_resource_url)}
                                 className="inline-flex items-center px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
@@ -456,33 +566,35 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                         )}
 
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="space-y-3">
-                                <label className="text-sm font-semibold text-gray-700 block">Submission Type</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        type="button"
-                                        disabled={!isUnlocked}
-                                        onClick={() => setSubmissionType('github')}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center ${submissionType === 'github'
-                                            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                                            : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                    >
-                                        <Github className="mr-2 h-4 w-4" /> GitHub
-                                    </button>
-                                    <button
-                                        type="button"
-                                        disabled={!isUnlocked}
-                                        onClick={() => setSubmissionType('file')}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center ${submissionType === 'file'
-                                            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                                            : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                    >
-                                        <FileText className="mr-2 h-4 w-4" /> File
-                                    </button>
+                            {phase.allowed_submission_type === 'both' && (
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-gray-700 block">Submission Type</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            disabled={!isUnlocked}
+                                            onClick={() => setSubmissionType('github')}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center ${submissionType === 'github'
+                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        >
+                                            <Github className="mr-2 h-4 w-4" /> GitHub
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={!isUnlocked}
+                                            onClick={() => setSubmissionType('file')}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center ${submissionType === 'file'
+                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        >
+                                            <FileText className="mr-2 h-4 w-4" /> File
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {submissionType === 'github' ? (
                                 <div className="space-y-2">
@@ -504,8 +616,59 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
-                                    <p className="text-sm text-gray-500 italic">File upload is simulated in this version. Please provide notes instead.</p>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-gray-700 block">Upload File</label>
+                                    {selectedFile || existingFileUrl ? (
+                                        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center overflow-hidden">
+                                                    <FileText className="h-5 w-5 text-blue-500 mr-2 shrink-0" />
+                                                    <div className="truncate">
+                                                        <p className="text-sm font-medium text-gray-900 truncate">
+                                                            {selectedFile ? selectedFile.name : 'Submitted File'}
+                                                        </p>
+                                                        {selectedFile && (
+                                                            <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                                                        )}
+                                                        {!selectedFile && existingFileUrl && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => handleDownloadAssignment(e, existingFileUrl)}
+                                                                className="text-xs text-blue-600 hover:underline bg-transparent border-0 p-0 cursor-pointer"
+                                                            >
+                                                                View Submitted
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {isUnlocked && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleRemoveFile}
+                                                        className="ml-2 p-1 text-gray-400 hover:text-red-500"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors bg-gray-50">
+                                            <input
+                                                type="file"
+                                                id="file-upload"
+                                                className="hidden"
+                                                accept=".pdf,image/png,image/jpeg,image/jpg"
+                                                onChange={handleFileSelect}
+                                                disabled={!isUnlocked}
+                                            />
+                                            <label htmlFor="file-upload" className={`cursor-pointer flex flex-col items-center ${!isUnlocked ? 'pointer-events-none opacity-50' : ''}`}>
+                                                <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                                                <span className="text-sm font-medium text-gray-700">Click to upload</span>
+                                                <span className="text-xs text-gray-500 mt-1">PDF, PNG, JPG (max 2MB)</span>
+                                            </label>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

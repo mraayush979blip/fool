@@ -34,6 +34,8 @@ export interface Phase {
   description?: string;
   youtube_url?: string;
   assignment_resource_url?: string;
+  assignment_file_url?: string;
+  allowed_submission_type?: 'github' | 'file' | 'both';
   start_date: string;
   end_date: string;
   status: PhaseStatus;
