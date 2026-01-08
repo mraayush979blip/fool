@@ -27,6 +27,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const initializeAuth = async () => {
             console.log('🔄 [Auth] Initializing...');
 
+            // Explicitly check session in case onAuthStateChange is delayed
+            try {
+                const { data: { session: initialSession } } = await supabase.auth.getSession();
+                console.log('🔄 [Auth] Initial session check:', initialSession ? 'Found' : 'Null');
+                if (!initialSession && mounted) {
+                    setLoading(false);
+                }
+            } catch (err) {
+                console.error('❌ [Auth] Error checking initial session:', err);
+                if (mounted) setLoading(false);
+            }
+
             // Listen for auth changes
             const { data: { subscription } } = supabase.auth.onAuthStateChange(
                 async (event, session) => {
@@ -77,7 +89,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         // Signed out
                         if (mounted) {
                             setUser(null);
-                            userRef.current = null;
                             setSupabaseUser(null);
                             setLoading(false);
                         }
