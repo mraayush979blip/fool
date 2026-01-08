@@ -45,44 +45,52 @@ export default function StudentDashboard() {
                     return;
                 }
 
-                // Update streak on dashboard load
-                await supabase.rpc('update_student_streak', { student_uuid: user.id });
+                // Parallelize independent data fetching
+                const [
+                    streakResult,
+                    phasesResult,
+                    userResult,
+                    submissionsResult
+                ] = await Promise.all([
+                    // Update streak
+                    supabase.rpc('update_student_streak', { student_uuid: user.id }),
 
-                // Fetch phases
-                const { data: phasesData, error: phasesError } = await supabase
-                    .from('phases')
-                    .select('*')
-                    .eq('is_active', true)
-                    .eq('is_paused', false)
-                    .order('phase_number', { ascending: true });
+                    // Fetch phases
+                    supabase
+                        .from('phases')
+                        .select('*')
+                        .eq('is_active', true)
+                        .eq('is_paused', false)
+                        .order('phase_number', { ascending: true }),
 
-                if (phasesError) throw phasesError;
+                    // Fetch student stats
+                    supabase
+                        .from('users')
+                        .select('total_time_spent_seconds')
+                        .eq('id', user.id)
+                        .single(),
 
-                // Only show LIVE phases
-                const livePhases = (phasesData || []).filter(phase => {
+                    // Fetch completed phases
+                    supabase
+                        .from('submissions')
+                        .select('phase_id')
+                        .eq('student_id', user.id)
+                        .eq('status', 'valid')
+                ]);
+
+                if (phasesResult.error) throw phasesResult.error;
+
+                // Process phases
+                const livePhases = (phasesResult.data || []).filter(phase => {
                     const status = getPhaseStatus(phase.start_date, phase.end_date, phase.is_paused);
                     return status === 'live';
                 });
 
                 setPhases(livePhases);
 
-                // Fetch student stats
-                const { data: userData, error: userError } = await supabase
-                    .from('users')
-                    .select('total_time_spent_seconds')
-                    .eq('id', user.id)
-                    .single();
-
-                // Fetch completed phases
-                const { data: subData } = await supabase
-                    .from('submissions')
-                    .select('phase_id')
-                    .eq('student_id', user.id)
-                    .eq('status', 'valid');
-
                 setStats({
-                    completedCount: subData?.length || 0,
-                    totalTimeSeconds: userData?.total_time_spent_seconds || 0
+                    completedCount: submissionsResult.data?.length || 0,
+                    totalTimeSeconds: userResult.data?.total_time_spent_seconds || 0
                 });
 
             } catch (error) {

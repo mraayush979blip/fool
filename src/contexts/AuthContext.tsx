@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, getCurrentUser, signIn, signOut } from '@/lib/supabase';
 import { User } from '@/types/database';
@@ -19,6 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
     const [loading, setLoading] = useState(true);
+    const userRef = useRef<User | null>(null);
 
     useEffect(() => {
         let mounted = true;
@@ -37,6 +38,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     // unless we need to re-fetch the profile.
 
                     if (session?.user) {
+                        // Optimization: Skip fetching profile if we already have the user loaded
+                        // This prevents blocking UI on every token refresh
+                        if (userRef.current && userRef.current.id === session.user.id) {
+                            setSupabaseUser(session.user);
+                            if (mounted) setLoading(false);
+                            return;
+                        }
+
                         try {
                             const { data: userData, error: userError } = await supabase
                                 .from('users')
@@ -48,14 +57,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                             if (userData) {
                                 console.log('✅ [Auth] Profile loaded');
-                                setUser(userData as User);
+                                const newUser = userData as User;
+                                setUser(newUser);
+                                // Update ref immediately to prevent race conditions in subsequent events
+                                userRef.current = newUser;
                                 setSupabaseUser(session.user);
                             } else {
                                 console.warn('⚠️ [Auth] User authenticated but profile missing');
-                                // Don't sign out automatically, let UI handle it or waiting for sync
-                                // But do set separate states so we know auth works but db missing
                                 setSupabaseUser(session.user);
                                 setUser(null);
+                                userRef.current = null;
                             }
                         } catch (err) {
                             console.error('❌ [Auth] Error fetching profile:', err);
@@ -66,6 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         // Signed out
                         if (mounted) {
                             setUser(null);
+                            userRef.current = null;
                             setSupabaseUser(null);
                             setLoading(false);
                         }
@@ -112,6 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const handleSignOut = async () => {
         await signOut();
         setUser(null);
+        userRef.current = null;
         setSupabaseUser(null);
     };
 
