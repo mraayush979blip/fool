@@ -103,7 +103,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
         try {
             const fileExt = selectedFile.name.split('.').pop();
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-            const filePath = `assignment-documents/${fileName}`;
+            const filePath = fileName;
 
             const { error: uploadError } = await supabase.storage
                 .from('assignment-documents')
@@ -140,7 +140,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
 
             const { error } = await supabase.storage
                 .from('assignment-documents')
-                .remove([`assignment-documents/${fileName}`]);
+                .remove([fileName]);
 
             if (error) console.error('Error deleting file:', error);
         } catch (error) {
