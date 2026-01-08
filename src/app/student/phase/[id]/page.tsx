@@ -236,6 +236,16 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         e.preventDefault();
         try {
             const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(`Download failed with status: ${response.status}`);
+            }
+
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                throw new Error('Download failed: The server returned an HTML page instead of a file.');
+            }
+
             const blob = await response.blob();
             const blobUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
