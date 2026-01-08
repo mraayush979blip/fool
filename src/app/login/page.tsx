@@ -21,8 +21,23 @@ export default function LoginPage() {
     }, [user, authLoading, router]);
 
 
+    const [showLoader, setShowLoader] = useState(false);
+
+    useEffect(() => {
+        let timeoutId: NodeJS.Timeout;
+        if (authLoading) {
+            timeoutId = setTimeout(() => setShowLoader(true), 500);
+        } else {
+            setShowLoader(false);
+        }
+        return () => clearTimeout(timeoutId);
+    }, [authLoading]);
+
     if (authLoading) {
-        return <NeonLoader />;
+        if (showLoader) {
+            return <NeonLoader />;
+        }
+        return null;
     }
 
     const handleSubmit = async (e: React.FormEvent) => {

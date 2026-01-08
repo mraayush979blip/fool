@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import NeonLoader from '@/components/NeonLoader';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function HomePage() {
   const { user, loading } = useAuth();
@@ -26,8 +26,23 @@ export default function HomePage() {
   }, [user, loading, router]);
 
 
+  const [showLoader, setShowLoader] = useState(false);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (loading) {
+      timeoutId = setTimeout(() => setShowLoader(true), 500);
+    } else {
+      setShowLoader(false);
+    }
+    return () => clearTimeout(timeoutId);
+  }, [loading]);
+
   if (loading) {
-    return <NeonLoader />;
+    if (showLoader) {
+      return <NeonLoader />;
+    }
+    return null;
   }
 
   return null;
