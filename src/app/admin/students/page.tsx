@@ -45,27 +45,41 @@ export default function StudentListPage() {
 
     const toggleStudentStatus = async (student: User) => {
         const newStatus = student.status === 'active' ? 'revoked' : 'active';
-        if (!confirm(`Are you sure you want to ${newStatus === 'revoked' ? 'revoke access for' : 'reactivate'} ${student.name}?`)) return;
+        if (!confirm(`Are you sure you want to ${newStatus === 'revoked' ? 'revoke access for' : 'restore access for'} ${student.name}?`)) return;
 
         try {
-            const { error } = await supabase
-                .from('users')
-                .update({ status: newStatus })
-                .eq('id', student.id);
+            if (newStatus === 'active') {
+                // Use the RPC for restoration to handle phase bypass
+                const { data, error } = await supabase.rpc('admin_restore_student', {
+                    target_student_id: student.id
+                });
 
-            if (error) throw error;
+                if (error) throw error;
 
-            // Log industrial event
-            await supabase.from('activity_logs').insert({
-                student_id: student.id,
-                phase_id: '00000000-0000-0000-0000-000000000000', // System level
-                activity_type: newStatus === 'revoked' ? 'ACCESS_REVOKED' : 'ACCESS_RESTORED',
-                payload: { admin_id: (await supabase.auth.getUser()).data.user?.id }
-            });
+                // Optional: Show success message based on data
+                // console.log('Restoration result:', data);
+            } else {
+                // Use standard update for revocation
+                const { error } = await supabase
+                    .from('users')
+                    .update({ status: newStatus })
+                    .eq('id', student.id);
+
+                if (error) throw error;
+
+                // Log industrial event
+                await supabase.from('activity_logs').insert({
+                    student_id: student.id,
+                    phase_id: '00000000-0000-0000-0000-000000000000', // System level
+                    activity_type: 'ACCESS_REVOKED',
+                    payload: { admin_id: (await supabase.auth.getUser()).data.user?.id }
+                });
+            }
 
             fetchStudents();
         } catch (error) {
             console.error('Error updating student status:', error);
+            alert('Failed to update student status. Check console for details.');
         }
     };
 

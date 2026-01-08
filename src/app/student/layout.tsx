@@ -14,9 +14,20 @@ export default function StudentLayout({
     const { user, signOut } = useAuth();
     const pathname = usePathname();
 
+    const MobileNavLink = ({ href, icon: Icon, label, isActive }: { href: string; icon: any; label: string; isActive: boolean }) => (
+        <Link
+            href={href}
+            className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'
+                }`}
+        >
+            <Icon className={`h-6 w-6 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
+            <span className="text-xs font-medium">{label}</span>
+        </Link>
+    );
+
     return (
         <ProtectedRoute requireRole="student">
-            <div className="min-h-screen bg-gray-50 flex flex-col">
+            <div className="min-h-screen bg-gray-50 flex flex-col pb-16 md:pb-0">
                 <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between h-16">
@@ -77,13 +88,31 @@ export default function StudentLayout({
                     {children}
                 </main>
 
-                <footer className="bg-white border-t border-gray-200 py-8">
+                <footer className="hidden md:block bg-white border-t border-gray-200 py-8">
                     <div className="max-w-7xl mx-auto px-4 text-center">
                         <p className="text-sm text-gray-500">
                             &copy; {new Date().getFullYear()} Levelone - sab ka sath sab vikas. All rights reserved.
                         </p>
                     </div>
                 </footer>
+
+                {/* Mobile Bottom Navigation */}
+                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-16 z-50 pb-safe">
+                    <div className="grid grid-cols-2 h-full">
+                        <MobileNavLink
+                            href="/student"
+                            icon={BookOpen}
+                            label="Dashboard"
+                            isActive={pathname === '/student'}
+                        />
+                        <MobileNavLink
+                            href="/student/compete"
+                            icon={Trophy}
+                            label="Compete"
+                            isActive={pathname === '/student/compete'}
+                        />
+                    </div>
+                </div>
             </div>
         </ProtectedRoute>
     );
