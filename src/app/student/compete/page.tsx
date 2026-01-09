@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Trophy, Flame, Users, CheckCircle2, Loader2, ArrowLeft, Medal } from 'lucide-react';
 import Link from 'next/link';
+import BadgeList from '@/components/gamification/BadgeList';
 
 interface LeaderboardEntry {
     id: string;
@@ -19,12 +20,26 @@ interface PhaseStats {
     completed_count: number;
 }
 
+interface RankContext {
+    rank: number;
+    neighbors: {
+        id: string;
+        name: string;
+        rank_position: number;
+        completed_phases: number;
+        current_streak: number;
+    }[];
+}
+
 export default function CompetePage() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [phaseStats, setPhaseStats] = useState<PhaseStats[]>([]);
     const [totalStudents, setTotalStudents] = useState(0);
+    const [badges, setBadges] = useState<any[]>([]);
+    const [userBadges, setUserBadges] = useState<any[]>([]);
+    const [rankContext, setRankContext] = useState<RankContext | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -32,7 +47,23 @@ export default function CompetePage() {
             // 1. Update own streak on page load
             if (user) {
                 await supabase.rpc('update_student_streak', { student_uuid: user.id });
+
+                // Fetch User Badges
+                const { data: ubData } = await supabase
+                    .from('user_badges')
+                    .select('*')
+                    .eq('user_id', user.id);
+                setUserBadges(ubData || []);
+
+                // Fetch Rank Context
+                const { data: rankData } = await supabase
+                    .rpc('get_student_rank_context', { current_student_id: user.id });
+                setRankContext(rankData);
             }
+
+            // Fetch All Badges
+            const { data: bData } = await supabase.from('badges').select('*');
+            setBadges(bData || []);
 
             // 2. Fetch Leaderboard (Top 10 by completed phases, then streak)
             // Note: This requires a query that counts valid submissions per user
@@ -152,6 +183,11 @@ export default function CompetePage() {
                         </div>
                     </div>
 
+                    {/* Badge List (Mobile/Desktop stacked) */}
+                    <div className="lg:col-span-1">
+                        <BadgeList badges={badges} userBadges={userBadges} />
+                    </div>
+
                     {/* Community Stats */}
                     <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm space-y-6">
                         <div className="flex items-center space-x-3">
@@ -210,8 +246,8 @@ export default function CompetePage() {
                                                 {index < 3 ? (
                                                     <div className="relative">
                                                         <Medal className={`h-8 w-8 mx-auto ${index === 0 ? 'text-yellow-400' :
-                                                                index === 1 ? 'text-gray-400' :
-                                                                    'text-amber-600'
+                                                            index === 1 ? 'text-gray-400' :
+                                                                'text-amber-600'
                                                             }`} />
                                                         <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white mb-0.5">
                                                             {index + 1}
@@ -248,6 +284,46 @@ export default function CompetePage() {
                                         </div>
                                     </div>
                                 ))}
+
+                                {/* You Are Here Section */}
+                                {rankContext && rankContext.rank > 10 && rankContext.neighbors && (
+                                    <>
+                                        <div className="p-4 bg-gray-50 flex items-center justify-center">
+                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">...</span>
+                                        </div>
+                                        <div className="bg-blue-50/30 border-t-2 border-b-2 border-blue-100">
+                                            <div className="px-6 py-3 bg-blue-50 flex items-center justify-between">
+                                                <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wider">You Are Here</h3>
+                                            </div>
+                                            {rankContext.neighbors.map((neighbor) => (
+                                                <div
+                                                    key={neighbor.id}
+                                                    className={`p-6 flex items-center justify-between ${neighbor.id === user?.id ? 'bg-blue-50' : 'bg-white opacity-70'}`}
+                                                >
+                                                    <div className="flex items-center space-x-4">
+                                                        <div className="flex-shrink-0 w-10 text-center">
+                                                            <span className="text-lg font-black text-gray-400">{neighbor.rank_position}</span>
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-gray-900 flex items-center">
+                                                                {neighbor.name}
+                                                                {neighbor.id === user?.id && (
+                                                                    <span className="ml-2 text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full uppercase tracking-tighter">You</span>
+                                                                )}
+                                                            </p>
+                                                            <div className="flex items-center mt-0.5 space-x-3 text-xs text-gray-500">
+                                                                <span className="flex items-center">
+                                                                    <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" />
+                                                                    {neighbor.completed_phases} Phases
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
 
                                 {leaderboard.length === 0 && (
                                     <div className="py-20 text-center">
