@@ -11,6 +11,7 @@ interface AuthContextType {
     loading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
     signOut: () => Promise<void>;
+    refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -105,6 +106,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         initializeAuth();
     }, []);
 
+    const fetchUserProfile = async (userId: string) => {
+        try {
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (userData) {
+                console.log('✅ [Auth] Profile refreshed');
+                const newUser = userData as User;
+                setUser(newUser);
+                userRef.current = newUser;
+            }
+        } catch (err) {
+            console.error('❌ [Auth] Error refreshing profile:', err);
+        }
+    };
+
+    const handleRefreshUser = async () => {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+            await fetchUserProfile(authUser.id);
+        }
+    };
+
     const handleSignIn = async (email: string, password: string) => {
         try {
             setLoading(true);
@@ -147,6 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 loading,
                 signIn: handleSignIn,
                 signOut: handleSignOut,
+                refreshUser: handleRefreshUser,
             }}
         >
             {children}

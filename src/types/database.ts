@@ -24,6 +24,9 @@ export interface User {
   current_streak?: number;
   max_streak?: number;
   last_activity_date?: string;
+  points?: number;
+  equipped_theme?: string;
+  equipped_banner?: string;
 }
 
 // Phase Interface

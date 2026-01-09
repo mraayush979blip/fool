@@ -38,16 +38,18 @@ export default function ActivityTracker() {
                     const { data, error } = await supabase.rpc('award_activity_point');
 
                     if (error) {
-                        console.error('Error awarding point:', {
-                            message: error.message,
-                            details: error.details,
-                            hint: error.hint,
-                            code: error.code
-                        });
-                    } else if (data && data.success) {
-                        // Optional: Silent success or very subtle toast
-                        // toast.success('+1 Point (Activity)', { duration: 2000, position: 'bottom-right' });
-                        console.log('Activity point awarded');
+                        console.error('❌ [ActivityTracker] RPC Error:', error.message || 'Unknown error');
+                        console.error('Error Code:', error.code);
+                        console.error('Error Details:', error.details);
+                        console.error('Error Hint:', error.hint);
+                        console.log('Full Debug Error:', error);
+                    } else if (data) {
+                        if (data.success) {
+                            console.log('✅ Activity point awarded');
+                        } else {
+                            // This matches the "Cooldown active" case from our SQL
+                            console.log('ℹ️ Activity point status:', data.message);
+                        }
                     }
                 } catch (err) {
                     console.error('Failed to award activity point:', err);

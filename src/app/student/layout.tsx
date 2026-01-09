@@ -29,8 +29,12 @@ export default function StudentLayout({
     return (
         <ProtectedRoute requireRole="student">
             <ActivityTracker />
-            <div className="min-h-screen bg-gray-50 flex flex-col pb-16 md:pb-0">
-                <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+            <div
+                className="min-h-screen flex flex-col pb-16 md:pb-0 transition-colors duration-500"
+                style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}
+                data-theme={user?.equipped_theme || 'default'}
+            >
+                <nav className="border-b transition-colors relative z-50" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #e5e7eb)' }}>
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between h-16">
                             <div className="flex items-center space-x-8">
@@ -100,7 +104,7 @@ export default function StudentLayout({
                     {children}
                 </main>
 
-                <footer className="hidden md:block bg-white border-t border-gray-200 py-8">
+                <footer className="hidden md:block border-t py-8 transition-colors" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #e5e7eb)' }}>
                     <div className="max-w-7xl mx-auto px-4 text-center">
                         <p className="text-sm text-gray-500">
                             &copy; {new Date().getFullYear()} Levelone - sab ka sath sab vikas. All rights reserved.
@@ -109,7 +113,7 @@ export default function StudentLayout({
                 </footer>
 
                 {/* Mobile Bottom Navigation */}
-                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-16 z-50 pb-safe">
+                <div className="md:hidden fixed bottom-0 left-0 right-0 border-t h-16 z-50 pb-safe transition-colors" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #e5e7eb)' }}>
                     <div className="grid grid-cols-3 h-full">
                         <MobileNavLink
                             href="/student"

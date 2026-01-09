@@ -31,10 +31,12 @@ CREATE TABLE IF NOT EXISTS user_inventory (
 ALTER TABLE store_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_inventory ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Everyone can view store items" ON store_items
+DROP POLICY IF EXISTS "everyone_view_store_items" ON store_items;
+CREATE POLICY "everyone_view_store_items" ON store_items
     FOR SELECT USING (true);
 
-CREATE POLICY "Users can view their own inventory" ON user_inventory
+DROP POLICY IF EXISTS "users_view_own_inventory" ON user_inventory;
+CREATE POLICY "users_view_own_inventory" ON user_inventory
     FOR SELECT USING (auth.uid() = user_id);
 
 -- 4. RPC: Award Points
@@ -128,8 +130,9 @@ EXECUTE FUNCTION trigger_award_points_on_badge();
 -- 7. Seed Initial Store Items
 INSERT INTO store_items (code, name, description, cost, type, asset_value, required_streak)
 VALUES 
+('DEFAULT_THEME', 'Default Theme', 'The classic Levelone learning experience.', 0, 'theme', 'default', NULL),
 ('THEME_NEON', 'Neon Cyberpunk', 'A vibrant, glowing neon theme for your dashboard.', 500, 'theme', 'theme-neon', 3),
 ('THEME_DARK_PLUS', 'Midnight Pro', 'An ultra-dark, high contrast mode for late night coders.', 1000, 'theme', 'theme-midnight', NULL),
 ('FRAME_GOLD', 'Golden Frame', 'A shiny gold border for your avatar.', 2500, 'avatar_frame', 'frame-gold', 14),
-('BANNER_SPACE', 'Deep Space', 'A cosmic background for your profile.', 2000, 'banner', 'banner-space', 7)
+('BANNER_SPACE', 'Deep Space', 'A cosmic background for your profile.', 2000, 'banner', '9H36Gjg5SLM', 7)
 ON CONFLICT (code) DO NOTHING;

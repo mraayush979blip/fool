@@ -4,6 +4,7 @@ import { Lock, Check, ShoppingBag, AlertCircle } from 'lucide-react';
 
 export interface StoreItem {
     id: string;
+    code: string;
     name: string;
     description: string;
     cost: number;
@@ -77,14 +78,16 @@ export default function StoreItemCard({
                     {isOwned ? (
                         <button
                             onClick={() => onEquip(item)}
-                            disabled={isEquipped || purchasing}
+                            disabled={isEquipped || (item.code !== 'DEFAULT_THEME' && item.code !== 'DEFAULT_BANNER' && item.type !== 'avatar_frame')}
                             className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center
                                 ${isEquipped
                                     ? 'bg-gray-100 text-gray-400 cursor-default'
-                                    : 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm hover:shadow-purple-200'
+                                    : (item.code !== 'DEFAULT_THEME' && item.code !== 'DEFAULT_BANNER' && item.type !== 'avatar_frame')
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                                        : 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'
                                 }`}
                         >
-                            {isEquipped ? 'Active' : 'Equip'}
+                            {isEquipped ? 'Active' : (item.code !== 'DEFAULT_THEME' && item.code !== 'DEFAULT_BANNER' && item.type !== 'avatar_frame') ? 'Upcoming' : 'Equip'}
                         </button>
                     ) : (
                         <div className="flex items-center space-x-2">

@@ -44,12 +44,13 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
     const [uploadingFile, setUploadingFile] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [existingFileUrl, setExistingFileUrl] = useState<string | null>(null);
+    const [isVideoStarted, setIsVideoStarted] = useState(false);
 
     // Time tracking
     const lastBeatRef = useRef<number>(Date.now());
     const [timeSpent, setTimeSpent] = useState(0);
-
-    const isUnlocked = phase ? (timeSpent >= (phase.min_seconds_required || 0)) : false;
+    const timeSpentRef = useRef(0);
+    const [isUnlocked, setIsUnlocked] = useState(false);
     const remainingSeconds = phase ? Math.max(0, (phase.min_seconds_required || 0) - timeSpent) : 0;
 
     useEffect(() => {
@@ -59,7 +60,12 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 // Check if student should be revoked (self-check)
                 const { data: isRevoked, error: revokeError } = await supabase.rpc('check_and_revoke_self');
                 if (revokeError) {
-                    console.error('Error in self-revocation check:', revokeError);
+                    console.error('Error in self-revocation check:', {
+                        message: revokeError.message,
+                        details: revokeError.details,
+                        hint: revokeError.hint,
+                        code: revokeError.code
+                    });
                 } else if (isRevoked) {
                     window.location.href = '/revoked';
                     return;
@@ -108,6 +114,9 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 if (activityData) {
                     setTimeSpent(activityData.total_time_spent_seconds);
                     setVideoCompleted(activityData.video_completed || false);
+                    if (phaseData.min_seconds_required > 0 && activityData.total_time_spent_seconds >= phaseData.min_seconds_required) {
+                        setIsUnlocked(true);
+                    }
                 }
 
             } catch (err: any) {
@@ -123,83 +132,90 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         }
     }, [id, user]);
 
-    // Heartbeat logic
+    // 1. Live Ticking Timer (Every second)
     useEffect(() => {
         if (!phase || !user) return;
 
-        const interval = setInterval(async () => {
-            const now = Date.now();
-            const diff = Math.floor((now - lastBeatRef.current) / 1000);
+        const timer = setInterval(() => {
+            setTimeSpent(prev => {
+                const next = prev + 1;
+                timeSpentRef.current = next;
+                return next;
+            });
+        }, 1000);
 
-            if (diff >= 30) { // Heartbeat every 30 seconds
-                lastBeatRef.current = now;
+        return () => clearInterval(timer);
+    }, [phase, user]);
 
-                try {
-                    // Update activity record
-                    const { data: existing } = await supabase
+    // Update internal ref whenever state changes (e.g. from fetch)
+    useEffect(() => {
+        timeSpentRef.current = timeSpent;
+    }, [timeSpent]);
+
+    // 2. Heartbeat logic (Sync with DB every 30 seconds)
+    useEffect(() => {
+        if (!phase || !user) return;
+
+        const heartbeatInterval = setInterval(async () => {
+            try {
+                const currentSeconds = timeSpentRef.current;
+
+                // Update activity record in DB
+                const { data: existing } = await supabase
+                    .from('student_phase_activity')
+                    .select('id, total_time_spent_seconds')
+                    .eq('phase_id', id)
+                    .eq('student_id', user.id)
+                    .single();
+
+                if (existing) {
+                    await supabase
                         .from('student_phase_activity')
-                        .select('id, total_time_spent_seconds')
-                        .eq('phase_id', id)
-                        .eq('student_id', user.id)
-                        .single();
-
-                    if (existing) {
-                        const newTotal = existing.total_time_spent_seconds + diff;
-                        await supabase
-                            .from('student_phase_activity')
-                            .update({
-                                total_time_spent_seconds: newTotal,
-                                last_activity_at: new Date().toISOString()
-                            })
-                            .eq('id', existing.id);
-                        setTimeSpent(newTotal);
-
-                        // Check if this update unlocks the assignment
-                        if (phase.min_seconds_required > 0 &&
-                            existing.total_time_spent_seconds < phase.min_seconds_required &&
-                            newTotal >= phase.min_seconds_required) {
-                            setSuccess('Congratulations! You have spent enough time to unlock the assignment submission.');
-                        }
-                    } else {
-                        await supabase
-                            .from('student_phase_activity')
-                            .insert({
-                                phase_id: id,
-                                student_id: user.id,
-                                total_time_spent_seconds: diff,
-                                last_activity_at: new Date().toISOString()
-                            });
-                        setTimeSpent(diff);
-
-                        if (phase.min_seconds_required > 0 && diff >= phase.min_seconds_required) {
-                            setSuccess('Congratulations! You have spent enough time to unlock the assignment submission.');
-                        }
-                    }
-
-                    // Also update global user time
-                    const { data: userData } = await supabase
-                        .from('users')
-                        .select('total_time_spent_seconds')
-                        .eq('id', user.id)
-                        .single();
-
-                    if (userData) {
-                        await supabase
-                            .from('users')
-                            .update({
-                                total_time_spent_seconds: (userData.total_time_spent_seconds || 0) + diff,
-                                last_activity_at: new Date().toISOString()
-                            })
-                            .eq('id', user.id);
-                    }
-                } catch (err) {
-                    console.error('Heartbeat error:', err);
+                        .update({
+                            total_time_spent_seconds: currentSeconds,
+                            last_activity_at: new Date().toISOString()
+                        })
+                        .eq('id', existing.id);
+                } else {
+                    await supabase
+                        .from('student_phase_activity')
+                        .insert({
+                            phase_id: id,
+                            student_id: user.id,
+                            total_time_spent_seconds: currentSeconds,
+                            last_activity_at: new Date().toISOString()
+                        });
                 }
-            }
-        }, 10000); // Check every 10 seconds
 
-        return () => clearInterval(interval);
-    }, [phase, user, id]);
+                // Periodic check for auto-unlock
+                if (phase.min_seconds_required > 0 && currentSeconds >= phase.min_seconds_required && !isUnlocked) {
+                    setIsUnlocked(true);
+                    setSuccess('Congratulations! You have spent enough time to unlock the assignment submission.');
+                }
+
+                // Update global user time (Cumulative)
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('total_time_spent_seconds')
+                    .eq('id', user.id)
+                    .single();
+
+                if (userData) {
+                    await supabase
+                        .from('users')
+                        .update({
+                            total_time_spent_seconds: (userData.total_time_spent_seconds || 0) + 30,
+                            last_activity_at: new Date().toISOString()
+                        })
+                        .eq('id', user.id);
+                }
+            } catch (err) {
+                console.error('Heartbeat error:', err);
+            }
+        }, 30000); // 30 second sync
+
+        return () => clearInterval(heartbeatInterval);
+    }, [phase, user, id]); // Removed timeSpent and isUnlocked from dependencies!
 
     const handleVideoEnd = async () => {
         if (!user || videoCompleted) return;
@@ -488,9 +504,11 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                             Assignment Unlocked
                         </div>
                     )}
-                    <div className="flex items-center text-sm text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-100 shadow-sm">
+                    <div className="flex items-center text-sm text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-100 shadow-sm font-mono">
                         <Clock className="h-4 w-4 mr-2 text-orange-500" />
-                        <span>Time Spent: {Math.floor(timeSpent / 3600)}h {Math.floor((timeSpent % 3600) / 60)}m</span>
+                        <span>
+                            Time Spent: {Math.floor(timeSpent / 3600)}h {Math.floor((timeSpent % 3600) / 60)}m {timeSpent % 60}s
+                        </span>
                     </div>
                 </div>
             </div>
@@ -508,19 +526,34 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                         </div>
 
                         {videoId ? (
-                            <div className="aspect-video bg-black">
-                                <YouTube
-                                    videoId={videoId}
-                                    className="w-full h-full"
-                                    onEnd={handleVideoEnd}
-                                    opts={{
-                                        width: '100%',
-                                        height: '100%',
-                                        playerVars: {
-                                            autoplay: 0,
-                                        },
-                                    }}
-                                />
+                            <div className="aspect-video bg-black relative">
+                                {!isVideoStarted ? (
+                                    <div
+                                        className="absolute inset-0 z-10 cursor-pointer group"
+                                        onClick={() => setIsVideoStarted(true)}
+                                    >
+                                        <img
+                                            src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+                                            alt="Video Thumbnail"
+                                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="w-20 h-14 bg-red-600 rounded-xl flex items-center justify-center group-hover:bg-red-700 transition-colors shadow-xl">
+                                                <div className="w-0 h-0 border-y-[10px] border-y-transparent border-l-[18px] border-l-white ml-1"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <iframe
+                                        width="100%"
+                                        height="100%"
+                                        src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        className="w-full h-full"
+                                    ></iframe>
+                                )}
                             </div>
                         ) : (
                             <div className="aspect-video bg-gray-100 flex items-center justify-center text-gray-400">

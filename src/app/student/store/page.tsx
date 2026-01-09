@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { Loader2, ArrowLeft, ShoppingBag, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import StoreItemCard, { StoreItem } from '@/components/gamification/StoreItemCard';
 import PointsDisplay from '@/components/gamification/PointsDisplay';
 import { toast } from 'sonner';
 
 export default function StorePage() {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const [loading, setLoading] = useState(true);
     const [items, setItems] = useState<StoreItem[]>([]);
     const [userPoints, setUserPoints] = useState(0);
@@ -24,16 +24,20 @@ export default function StorePage() {
         try {
             if (!user) return;
 
-            // 1. Fetch User Stats (Points, Streak)
+            // 1. Fetch User Stats (Points, Streak, Equips)
             const { data: userData } = await supabase
                 .from('users')
-                .select('points, current_streak')
+                .select('points, current_streak, equipped_theme, equipped_banner')
                 .eq('id', user.id)
                 .single();
 
             if (userData) {
                 setUserPoints(userData.points || 0);
                 setUserStreak(userData.current_streak || 0);
+                setEquippedItems({
+                    theme: userData.equipped_theme || 'default',
+                    banner: userData.equipped_banner || 'default'
+                });
             }
 
             // 2. Fetch User Inventory
@@ -51,7 +55,33 @@ export default function StorePage() {
                 .select('*')
                 .order('cost', { ascending: true });
 
-            setItems(itemData || []);
+            const fetchedItems = itemData || [];
+
+            // 4. Prepend Default Options (Ensure they always exist even if SQL wasn't run)
+            const defaultItems: StoreItem[] = [
+                {
+                    id: 'default-theme-id',
+                    code: 'DEFAULT_THEME',
+                    name: 'Default Theme',
+                    description: 'The classic Levelone learning experience.',
+                    cost: 0,
+                    type: 'theme',
+                    asset_value: 'default'
+                }
+            ];
+
+            // Only add defaults if they don't already exist in the database results
+            let finalItems = [...defaultItems.filter(d => !fetchedItems.some(f => f.code === d.code)), ...fetchedItems]
+                .filter(item => item.code !== 'DEFAULT_BANNER');
+
+            // 5. Final Sort: Default Theme MUST be first, then order by cost
+            finalItems = finalItems.sort((a, b) => {
+                if (a.code === 'DEFAULT_THEME') return -1;
+                if (b.code === 'DEFAULT_THEME') return 1;
+                return a.cost - b.cost;
+            });
+
+            setItems(finalItems);
 
         } catch (error) {
             console.error('Error fetching store data:', error);
@@ -91,21 +121,49 @@ export default function StorePage() {
 
     const handleEquip = async (item: StoreItem) => {
         try {
-            const { data, error } = await supabase.rpc('equip_item', { item_id_param: item.id });
+            if (!user) return;
 
-            if (error) throw error;
+            // SPECIAL CASE: Defaults might not be in the database inventory
+            if (item.id === 'default-theme-id' || item.id === 'default-banner-id') {
+                const column = item.type === 'theme' ? 'equipped_theme' : 'equipped_banner';
+                const { error } = await supabase
+                    .from('users')
+                    .update({ [column]: 'default' })
+                    .eq('id', user.id);
 
-            if (data.success) {
+                if (error) throw error;
+
                 toast.success(`${item.name} Equipped!`);
-                // Update local state based on item type
+
+                // Update local state
                 if (item.type === 'theme') {
-                    setEquippedItems(prev => ({ ...prev, theme: item.asset_value }));
-                } else if (item.type === 'banner') {
-                    setEquippedItems(prev => ({ ...prev, banner: item.asset_value }));
+                    setEquippedItems(prev => ({ ...prev, theme: 'default' }));
+                } else {
+                    setEquippedItems(prev => ({ ...prev, banner: 'default' }));
                 }
             } else {
-                toast.error(data.message || 'Equip failed');
+                // REGULAR CASE: Real items in database
+                const { data, error } = await supabase.rpc('equip_item', { item_id_param: item.id });
+
+                if (error) throw error;
+
+                if (data.success) {
+                    toast.success(`${item.name} Equipped!`);
+                    // Update local state based on item type
+                    if (item.type === 'theme') {
+                        setEquippedItems(prev => ({ ...prev, theme: item.asset_value }));
+                    } else if (item.type === 'banner') {
+                        setEquippedItems(prev => ({ ...prev, banner: item.asset_value }));
+                    }
+                } else {
+                    toast.error(data.message || 'Equip failed');
+                    return;
+                }
             }
+
+            // Refresh global user state in AuthContext to apply theme changes immediately
+            await refreshUser();
+
         } catch (error: any) {
             console.error('Equip error:', error);
             toast.error('Failed to equip item');
@@ -156,13 +214,24 @@ export default function StorePage() {
                 </div>
             </div>
 
+            {/* Fake Permission Message */}
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl flex items-start space-x-3 shadow-sm animate-pulse">
+                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                <div>
+                    <p className="text-sm font-bold text-red-800">Ineligibility Warning</p>
+                    <p className="text-sm text-red-700">
+                        You are currently not eligible for some premium rewards. The admin has not given the permission to use the theme yet for your account status.
+                    </p>
+                </div>
+            </div>
+
             {/* Store Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {items.map((item) => (
                     <StoreItemCard
                         key={item.id}
                         item={item}
-                        isOwned={inventory.has(item.id)}
+                        isOwned={item.cost === 0 || inventory.has(item.id)}
                         isEquipped={isItemEquipped(item)}
                         canAfford={userPoints >= item.cost}
                         lockedReason={getLockedReason(item)}
