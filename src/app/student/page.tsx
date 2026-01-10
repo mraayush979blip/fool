@@ -54,7 +54,8 @@ export default function StudentDashboard() {
                     streakResult,
                     phasesResult,
                     userResult,
-                    submissionsResult
+                    submissionsResult,
+                    activityResult
                 ] = await Promise.all([
                     // Update streak
                     supabase.rpc('update_student_streak', { student_uuid: user.id }),
@@ -78,6 +79,12 @@ export default function StudentDashboard() {
                     supabase
                         .from('submissions')
                         .select('phase_id')
+                        .eq('student_id', user.id),
+
+                    // Fetch total phase-specific learning time
+                    supabase
+                        .from('student_phase_activity')
+                        .select('total_time_spent_seconds')
                         .eq('student_id', user.id)
                 ]);
 
@@ -95,9 +102,12 @@ export default function StudentDashboard() {
                 const submissionIds = new Set((submissionsResult.data || []).map(s => s.phase_id));
                 setSubmissions(submissionIds);
 
+                // Calculate total learning time from all phases
+                const totalLearningTime = (activityResult.data || []).reduce((acc: number, curr: any) => acc + (curr.total_time_spent_seconds || 0), 0);
+
                 setStats({
                     completedCount: submissionsResult.data?.length || 0,
-                    totalTimeSeconds: userResult.data?.total_time_spent_seconds || 0,
+                    totalTimeSeconds: totalLearningTime,
                     points: userResult.data?.points || 0
                 });
 
