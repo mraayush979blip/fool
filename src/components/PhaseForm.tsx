@@ -233,9 +233,13 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 id="phase_number"
                                 required
                                 min="1"
+                                step="any"
                                 className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
-                                value={formData.phase_number}
-                                onChange={(e) => setFormData({ ...formData, phase_number: parseInt(e.target.value) })}
+                                value={isNaN(formData.phase_number as number) ? '' : formData.phase_number}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? NaN : parseFloat(e.target.value);
+                                    setFormData({ ...formData, phase_number: val });
+                                }}
                             />
                         </div>
                     </div>
@@ -417,8 +421,11 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 min="0"
                                 placeholder="e.g. 30"
                                 className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
-                                value={formData.min_seconds_required ? Math.floor(formData.min_seconds_required / 60) : 0}
-                                onChange={(e) => setFormData({ ...formData, min_seconds_required: parseInt(e.target.value) * 60 })}
+                                value={isNaN(formData.min_seconds_required as number) ? '' : (formData.min_seconds_required ? Math.floor(formData.min_seconds_required / 60) : 0)}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? NaN : parseInt(e.target.value) * 60;
+                                    setFormData({ ...formData, min_seconds_required: val });
+                                }}
                             />
                             <span className="ml-3 text-sm text-gray-500">minutes</span>
                         </div>
@@ -437,8 +444,11 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 min="1"
                                 max="10"
                                 className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
-                                value={formData.total_assignments || 1}
-                                onChange={(e) => setFormData({ ...formData, total_assignments: parseInt(e.target.value) })}
+                                value={isNaN(formData.total_assignments as number) ? '' : (formData.total_assignments || 1)}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? NaN : parseInt(e.target.value);
+                                    setFormData({ ...formData, total_assignments: val });
+                                }}
                             />
                         </div>
                         <p className="mt-1 text-xs text-gray-400 italic">How many separate assignments must the student submit for this phase?</p>
