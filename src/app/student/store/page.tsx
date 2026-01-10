@@ -15,7 +15,11 @@ export default function StorePage() {
     const [items, setItems] = useState<StoreItem[]>([]);
     const [userPoints, setUserPoints] = useState(0);
     const [userStreak, setUserStreak] = useState(0);
-    const [equippedItems, setEquippedItems] = useState<{ theme: string, banner: string }>({ theme: 'default', banner: 'default' });
+    const [equippedItems, setEquippedItems] = useState<{ theme: string, banner: string, avatar: string }>({
+        theme: 'default',
+        banner: 'default',
+        avatar: '👤'
+    });
     const [inventory, setInventory] = useState<Set<string>>(new Set());
     const [purchasingId, setPurchasingId] = useState<string | null>(null);
 
@@ -27,7 +31,7 @@ export default function StorePage() {
             // 1. Fetch User Stats (Points, Streak, Equips)
             const { data: userData } = await supabase
                 .from('users')
-                .select('points, current_streak, equipped_theme, equipped_banner')
+                .select('points, current_streak, equipped_theme, equipped_banner, equipped_avatar')
                 .eq('id', user.id)
                 .single();
 
@@ -36,7 +40,8 @@ export default function StorePage() {
                 setUserStreak(userData.current_streak || 0);
                 setEquippedItems({
                     theme: userData.equipped_theme || 'default',
-                    banner: userData.equipped_banner || 'default'
+                    banner: userData.equipped_banner || 'default',
+                    avatar: userData.equipped_avatar || '👤'
                 });
             }
 
@@ -60,13 +65,13 @@ export default function StorePage() {
             // 4. Prepend Default Options (Ensure they always exist even if SQL wasn't run)
             const defaultItems: StoreItem[] = [
                 {
-                    id: 'default-theme-id',
-                    code: 'DEFAULT_THEME',
-                    name: 'Default Theme',
-                    description: 'The classic Levelone learning experience.',
+                    id: 'default-avatar-id',
+                    code: 'CHAR_DEFAULT',
+                    name: 'Student',
+                    description: 'The standard Levelone student avatar.',
                     cost: 0,
-                    type: 'theme',
-                    asset_value: 'default'
+                    type: 'avatar',
+                    asset_value: '👤'
                 }
             ];
 
@@ -74,10 +79,10 @@ export default function StorePage() {
             let finalItems = [...defaultItems.filter(d => !fetchedItems.some(f => f.code === d.code)), ...fetchedItems]
                 .filter(item => item.code !== 'DEFAULT_BANNER');
 
-            // 5. Final Sort: Default Theme MUST be first, then order by cost
+            // 5. Final Sort: Default Avatar MUST be first, then order by cost
             finalItems = finalItems.sort((a, b) => {
-                if (a.code === 'DEFAULT_THEME') return -1;
-                if (b.code === 'DEFAULT_THEME') return 1;
+                if (a.code === 'CHAR_DEFAULT') return -1;
+                if (b.code === 'CHAR_DEFAULT') return 1;
                 return a.cost - b.cost;
             });
 
@@ -124,11 +129,14 @@ export default function StorePage() {
             if (!user) return;
 
             // SPECIAL CASE: Defaults might not be in the database inventory
-            if (item.id === 'default-theme-id' || item.id === 'default-banner-id') {
-                const column = item.type === 'theme' ? 'equipped_theme' : 'equipped_banner';
+            if (item.id === 'default-avatar-id' || item.id === 'default-banner-id' || item.id === 'default-theme-id') {
+                let column = 'equipped_avatar';
+                if (item.type === 'theme') column = 'equipped_theme';
+                if (item.type === 'banner') column = 'equipped_banner';
+
                 const { error } = await supabase
                     .from('users')
-                    .update({ [column]: 'default' })
+                    .update({ [column]: item.asset_value })
                     .eq('id', user.id);
 
                 if (error) throw error;
@@ -136,11 +144,10 @@ export default function StorePage() {
                 toast.success(`${item.name} Equipped!`);
 
                 // Update local state
-                if (item.type === 'theme') {
-                    setEquippedItems(prev => ({ ...prev, theme: 'default' }));
-                } else {
-                    setEquippedItems(prev => ({ ...prev, banner: 'default' }));
-                }
+                setEquippedItems(prev => ({
+                    ...prev,
+                    [item.type]: item.asset_value
+                }));
             } else {
                 // REGULAR CASE: Real items in database
                 const { data, error } = await supabase.rpc('equip_item', { item_id_param: item.id });
@@ -154,6 +161,8 @@ export default function StorePage() {
                         setEquippedItems(prev => ({ ...prev, theme: item.asset_value }));
                     } else if (item.type === 'banner') {
                         setEquippedItems(prev => ({ ...prev, banner: item.asset_value }));
+                    } else if (item.type === 'avatar') {
+                        setEquippedItems(prev => ({ ...prev, avatar: item.asset_value }));
                     }
                 } else {
                     toast.error(data.message || 'Equip failed');
@@ -174,6 +183,7 @@ export default function StorePage() {
     const isItemEquipped = (item: StoreItem) => {
         if (item.type === 'theme') return equippedItems.theme === item.asset_value;
         if (item.type === 'banner') return equippedItems.banner === item.asset_value;
+        if (item.type === 'avatar') return equippedItems.avatar === item.asset_value;
         return false;
     };
 

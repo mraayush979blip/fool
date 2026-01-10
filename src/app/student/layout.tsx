@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, User as UserIcon, BookOpen, Trophy, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import ActivityTracker from '@/components/gamification/ActivityTracker';
 import InstallPWA from '@/components/InstallPWA';
 
 export default function StudentLayout({
@@ -29,7 +28,6 @@ export default function StudentLayout({
 
     return (
         <ProtectedRoute requireRole="student">
-            <ActivityTracker />
             <div
                 className="min-h-screen flex flex-col pb-16 md:pb-0 transition-colors duration-500"
                 style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}
@@ -87,8 +85,8 @@ export default function StudentLayout({
                                     <span className="text-sm font-semibold text-gray-900">{user?.name || user?.email}</span>
                                     <span className="text-xs text-gray-500 capitalize">{user?.role}</span>
                                 </div>
-                                <div className="bg-gray-100 p-2 rounded-full text-gray-600">
-                                    <UserIcon className="h-5 w-5" />
+                                <div className="bg-gray-100 h-9 w-9 rounded-full flex items-center justify-center text-xl shadow-inner border border-gray-200">
+                                    {user?.equipped_avatar || '👤'}
                                 </div>
                                 <button
                                     onClick={() => signOut()}

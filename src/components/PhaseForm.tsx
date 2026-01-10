@@ -42,7 +42,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
         end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         is_active: true,
         is_mandatory: true,
-        min_seconds_required: 0,
+        min_seconds_required: 900, // Default 15 minutes
         total_assignments: 1,
     });
 

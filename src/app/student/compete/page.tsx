@@ -10,6 +10,7 @@ import BadgeList from '@/components/gamification/BadgeList';
 interface LeaderboardEntry {
     id: string;
     name: string;
+    avatar: string;
     completed_phases: number;
     current_streak: number;
 }
@@ -25,6 +26,7 @@ interface RankContext {
     neighbors: {
         id: string;
         name: string;
+        avatar: string;
         rank_position: number;
         completed_phases: number;
         current_streak: number;
@@ -74,6 +76,7 @@ export default function CompetePage() {
             const processedLB = (lbData || []).map((entry: any) => ({
                 id: entry.user_id,
                 name: entry.user_name,
+                avatar: entry.user_avatar || '👤',
                 current_streak: entry.current_streak || 0,
                 completed_phases: Number(entry.completed_phases) || 0,
                 activity_points: entry.activity_points || 0
@@ -246,6 +249,11 @@ export default function CompetePage() {
                                                     <span className="text-lg font-black text-gray-300">{index + 1}</span>
                                                 )}
                                             </div>
+                                            <div className="flex-shrink-0">
+                                                <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-xl shadow-inner border border-gray-200">
+                                                    {entry.avatar}
+                                                </div>
+                                            </div>
                                             <div>
                                                 <p className="font-bold text-gray-900 flex items-center">
                                                     {entry.name}
@@ -296,6 +304,11 @@ export default function CompetePage() {
                                                     <div className="flex items-center space-x-4">
                                                         <div className="flex-shrink-0 w-10 text-center">
                                                             <span className="text-lg font-black text-gray-400">{neighbor.rank_position}</span>
+                                                        </div>
+                                                        <div className="flex-shrink-0">
+                                                            <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center text-lg border border-gray-100">
+                                                                {neighbor.avatar || '👤'}
+                                                            </div>
                                                         </div>
                                                         <div>
                                                             <p className="font-bold text-gray-900 flex items-center">

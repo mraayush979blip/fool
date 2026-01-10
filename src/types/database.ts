@@ -27,6 +27,7 @@ export interface User {
   points?: number;
   equipped_theme?: string;
   equipped_banner?: string;
+  equipped_avatar?: string;
 }
 
 // Phase Interface

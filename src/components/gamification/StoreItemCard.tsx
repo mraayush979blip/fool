@@ -42,8 +42,8 @@ export default function StoreItemCard({
 
             {/* Visual Preview Placeholder */}
             <div className={`h-32 bg-gradient-to-br ${getGradientForType(item.type)} flex items-center justify-center relative p-4`}>
-                <span className="text-4xl filter drop-shadow opacity-50">
-                    {getIconForType(item.type)}
+                <span className={`text-4xl filter drop-shadow ${item.type === 'avatar' ? 'opacity-100 scale-125' : 'opacity-50'}`}>
+                    {item.type === 'avatar' ? item.asset_value : getIconForType(item.type)}
                 </span>
 
                 {isEquipped && (
@@ -78,7 +78,7 @@ export default function StoreItemCard({
                     {isOwned ? (
                         <button
                             onClick={() => onEquip(item)}
-                            disabled={isEquipped || (item.code !== 'DEFAULT_THEME' && item.code !== 'DEFAULT_BANNER' && item.type !== 'avatar_frame')}
+                            disabled={isEquipped || (item.code !== 'DEFAULT_THEME' && item.code !== 'DEFAULT_BANNER' && item.type !== 'avatar_frame' && item.type !== 'avatar')}
                             className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center
                                 ${isEquipped
                                     ? 'bg-gray-100 text-gray-400 cursor-default'
@@ -87,7 +87,7 @@ export default function StoreItemCard({
                                         : 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'
                                 }`}
                         >
-                            {isEquipped ? 'Active' : (item.code !== 'DEFAULT_THEME' && item.code !== 'DEFAULT_BANNER' && item.type !== 'avatar_frame') ? 'Upcoming' : 'Equip'}
+                            {isEquipped ? 'Active' : (item.code !== 'DEFAULT_THEME' && item.code !== 'DEFAULT_BANNER' && item.type !== 'avatar_frame' && item.type !== 'avatar') ? 'Upcoming' : 'Equip'}
                         </button>
                     ) : (
                         <div className="flex items-center space-x-2">
@@ -130,6 +130,7 @@ function getGradientForType(type: string): string {
         case 'theme': return 'from-indigo-100 to-purple-100';
         case 'banner': return 'from-pink-100 to-rose-100';
         case 'avatar_frame': return 'from-amber-100 to-yellow-100';
+        case 'avatar': return 'from-blue-100 to-indigo-100';
         default: return 'from-gray-100 to-gray-200';
     }
 }
@@ -148,6 +149,7 @@ function getTypeColor(type: string): string {
         case 'theme': return 'bg-indigo-100 text-indigo-700';
         case 'banner': return 'bg-pink-100 text-pink-700';
         case 'avatar_frame': return 'bg-amber-100 text-amber-700';
+        case 'avatar': return 'bg-blue-100 text-blue-700';
         default: return 'bg-gray-100 text-gray-700';
     }
 }

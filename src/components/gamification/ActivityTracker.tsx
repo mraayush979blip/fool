@@ -9,7 +9,7 @@ const ACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes of no input = idle
 const AWARD_INTERVAL_MS = 60 * 1000; // 1 minute
 
 export default function ActivityTracker() {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const lastActivityRef = useRef<number>(Date.now());
     const isIdleRef = useRef<boolean>(false);
 
@@ -39,24 +39,19 @@ export default function ActivityTracker() {
 
                     if (error) {
                         console.error('❌ [ActivityTracker] RPC Error:', error.message || 'Unknown error');
-                        console.error('Error Code:', error.code);
-                        console.error('Error Details:', error.details);
-                        console.error('Error Hint:', error.hint);
-                        console.log('Full Debug Error:', error);
-                    } else if (data) {
-                        if (data.success) {
-                            console.log('✅ Activity point awarded');
-                        } else {
-                            // This matches the "Cooldown active" case from our SQL
-                            console.log('ℹ️ Activity point status:', data.message);
-                        }
+                    } else if (data && data.success) {
+                        console.log('✅ Activity point awarded');
+                        // Refresh user profile to show NEW points in UI immediately
+                        await refreshUser();
+                    } else if (data && !data.success) {
+                        // Cooldown message or other failure
+                        console.log('ℹ️ Activity point status:', data.message);
                     }
                 } catch (err) {
                     console.error('Failed to award activity point:', err);
                 }
             } else {
                 isIdleRef.current = true;
-                // console.log('User is idle, no point awarded');
             }
         }, AWARD_INTERVAL_MS);
 
@@ -67,7 +62,7 @@ export default function ActivityTracker() {
             window.removeEventListener('scroll', handleInput);
             clearInterval(awardInterval);
         };
-    }, [user]);
+    }, [user, refreshUser]);
 
     return null; // Renderless component
 }

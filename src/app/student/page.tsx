@@ -9,7 +9,8 @@ import {
     CheckCircle2,
     Clock,
     ChevronRight,
-    Trophy
+    Trophy,
+    Zap
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
@@ -19,7 +20,7 @@ export default function StudentDashboard() {
     const { user } = useAuth();
     const [phases, setPhases] = useState<Phase[]>([]);
     const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState({ completedCount: 0, totalTimeSeconds: 0 });
+    const [stats, setStats] = useState({ completedCount: 0, totalTimeSeconds: 0, points: 0 });
     const [submissions, setSubmissions] = useState<Set<string>>(new Set());
 
     const formatDuration = (seconds: number) => {
@@ -32,7 +33,7 @@ export default function StudentDashboard() {
     useEffect(() => {
         const fetchDashboardData = async () => {
             if (!user) return;
-            setLoading(true);
+            if (phases.length === 0) setLoading(true);
             try {
                 // Check if student should be revoked (self-check)
                 const { data: isRevoked, error: revokeError } = await supabase.rpc('check_and_revoke_self');
@@ -69,7 +70,7 @@ export default function StudentDashboard() {
                     // Fetch student stats
                     supabase
                         .from('users')
-                        .select('total_time_spent_seconds')
+                        .select('total_time_spent_seconds, points')
                         .eq('id', user.id)
                         .single(),
 
@@ -96,7 +97,8 @@ export default function StudentDashboard() {
 
                 setStats({
                     completedCount: submissionsResult.data?.length || 0,
-                    totalTimeSeconds: userResult.data?.total_time_spent_seconds || 0
+                    totalTimeSeconds: userResult.data?.total_time_spent_seconds || 0,
+                    points: userResult.data?.points || 0
                 });
 
             } catch (error) {
@@ -106,8 +108,10 @@ export default function StudentDashboard() {
             }
         };
 
-        fetchDashboardData();
-    }, [user]);
+        if (user?.id) {
+            fetchDashboardData();
+        }
+    }, [user?.id]);
 
     if (loading) {
         return (
@@ -160,6 +164,15 @@ export default function StudentDashboard() {
                     <div>
                         <p className="text-sm font-medium uppercase" style={{ color: 'var(--text-muted, #6b7280)' }}>Completed</p>
                         <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{stats.completedCount}</p>
+                    </div>
+                </div>
+                <div className="p-6 rounded-xl shadow-sm border transition-all flex items-center space-x-4" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}>
+                    <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--theme-primary, #2563eb)22', color: 'var(--theme-primary, #2563eb)' }}>
+                        <Zap className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium uppercase" style={{ color: 'var(--text-muted, #6b7280)' }}>Activity Points</p>
+                        <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{(stats as any).points || 0}</p>
                     </div>
                 </div>
                 <div className="p-6 rounded-xl shadow-sm border transition-all flex items-center space-x-4" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}>

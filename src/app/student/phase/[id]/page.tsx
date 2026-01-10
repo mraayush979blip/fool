@@ -22,6 +22,7 @@ import Link from 'next/link';
 import YouTube from 'react-youtube';
 import { getPhaseStatus } from '@/lib/utils';
 import { isValidGitHubUrl, isValidFileSize, formatFileSize, isValidAssignmentFileType } from '@/utils/validation';
+import ActivityTracker from '@/components/gamification/ActivityTracker';
 
 interface PhasePageProps {
     params: Promise<{ id: string }>;
@@ -63,7 +64,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
     useEffect(() => {
         const fetchPhaseData = async () => {
-            setLoading(true);
+            if (!phase) setLoading(true); // Only show spinner on initial load
             try {
                 // Check if student should be revoked (self-check)
                 const { data: isRevoked, error: revokeError } = await supabase.rpc('check_and_revoke_self');
@@ -135,14 +136,25 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                     .eq('student_id', user?.id)
                     .single();
 
-                if (activityData) {
-                    setTimeSpent(activityData.total_time_spent_seconds);
-                    setVideoCompleted(activityData.video_completed || false);
-                    if (phaseData.min_seconds_required > 0 && activityData.total_time_spent_seconds >= phaseData.min_seconds_required) {
-                        setIsUnlocked(true);
-                    }
+                const spent = activityData?.total_time_spent_seconds || 0;
+                setTimeSpent(spent);
+                setVideoCompleted(activityData?.video_completed || false);
+
+                // Fix: Stricter unlock check (Respects admin time, fallbacks to video if no time set)
+                const req = phaseData.min_seconds_required || 0;
+                let shouldBeUnlocked = false;
+
+                if (req > 0) {
+                    shouldBeUnlocked = spent >= req;
+                } else {
+                    // If no time requirement set by admin, fallback to requiring video completion
+                    shouldBeUnlocked = activityData?.video_completed || false;
                 }
 
+                setIsUnlocked(shouldBeUnlocked);
+                if (shouldBeUnlocked) {
+                    console.log('🔓 [Phase] Unlocked (spent:', spent, 'req:', req, 'video:', videoCompleted, ')');
+                }
             } catch (err: any) {
                 console.error('Error fetching phase:', err);
                 setError(err.message);
@@ -151,10 +163,10 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
             }
         };
 
-        if (id && user) {
+        if (id && user?.id) {
             fetchPhaseData();
         }
-    }, [id, user]);
+    }, [id, user?.id]);
 
     // 1. Live Ticking Timer (Every second)
     useEffect(() => {
@@ -212,27 +224,26 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 }
 
                 // Periodic check for auto-unlock
-                if (phase.min_seconds_required > 0 && currentSeconds >= phase.min_seconds_required && !isUnlocked) {
-                    setIsUnlocked(true);
-                    setSuccess('Congratulations! You have spent enough time to unlock the assignment submission.');
+                const reqSeconds = phase.min_seconds_required || 0;
+                let meetsCondition = false;
+
+                if (reqSeconds > 0) {
+                    meetsCondition = currentSeconds >= reqSeconds;
+                } else {
+                    // Fallback to video completion if no time requirement
+                    meetsCondition = videoCompleted;
                 }
 
-                // Update global user time (Cumulative)
-                const { data: userData } = await supabase
-                    .from('users')
-                    .select('total_time_spent_seconds')
-                    .eq('id', user.id)
-                    .single();
-
-                if (userData) {
-                    await supabase
-                        .from('users')
-                        .update({
-                            total_time_spent_seconds: (userData.total_time_spent_seconds || 0) + 30,
-                            last_activity_at: new Date().toISOString()
-                        })
-                        .eq('id', user.id);
+                if (meetsCondition) {
+                    setIsUnlocked(prev => {
+                        if (!prev) {
+                            setSuccess('Congratulations! You have spent enough time to unlock the assignment submission.');
+                            return true;
+                        }
+                        return true;
+                    });
                 }
+
             } catch (err) {
                 console.error('Heartbeat error:', err);
             }
@@ -558,6 +569,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            <ActivityTracker />
             <div className="flex items-center justify-between">
                 <Link href="/student" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
