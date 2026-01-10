@@ -2,10 +2,32 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, ShieldAlert, Mail } from 'lucide-react';
-import Link from 'next/link';
+import { useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function RevokedPage() {
     const { signOut } = useAuth();
+    const [checking, setChecking] = useState(false);
+
+    const handleCheckStatus = async () => {
+        setChecking(true);
+        try {
+            const { data: isRevoked, error } = await supabase.rpc('check_and_revoke_self');
+            if (error) throw error;
+
+            if (!isRevoked) {
+                alert('Success! Your access has been restored.');
+                window.location.href = '/student';
+            } else {
+                alert('You are still revoked. Please ensure all mandatory assignments are submitted or contact the administrator if you believe this is an error.');
+            }
+        } catch (err: any) {
+            console.error('Error checking status:', err);
+            alert('An error occurred while checking your status: ' + err.message);
+        } finally {
+            setChecking(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -42,6 +64,13 @@ export default function RevokedPage() {
                         </div>
 
                         <div className="flex flex-col space-y-3">
+                            <button
+                                onClick={handleCheckStatus}
+                                disabled={checking}
+                                className="w-full flex justify-center items-center py-2 px-4 border border-blue-600 rounded-xl shadow-sm text-sm font-bold text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all font-sans disabled:opacity-50"
+                            >
+                                {checking ? 'Checking Status...' : 'Check Status / Restore Access'}
+                            </button>
                             <a
                                 href="mailto:mraayush979@gmail.com"
                                 className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all font-sans"

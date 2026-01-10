@@ -39,8 +39,8 @@ export default function AdminDashboard() {
             const { data, error } = await supabase.rpc('check_and_revoke_students');
             if (error) throw error;
 
-            const { revoked_count } = data as { revoked_count: number };
-            alert(`Sync complete! ${revoked_count} students were revoked.`);
+            const { revoked_count, restored_count } = data as { revoked_count: number; restored_count: number };
+            alert(`Sync complete!\n- ${revoked_count} students were revoked.\n- ${restored_count} students were restored.`);
             fetchDashboardStats();
         } catch (error) {
             console.error('Error syncing revocations:', error);
