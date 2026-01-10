@@ -60,7 +60,7 @@ export default function BadgeList({ badges, userBadges }: BadgeListProps) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {sortedBadges.map((badge) => {
                     const isEarned = earnedBadgeIds.has(badge.id);
                     const Icon = IconMap[badge.icon_name] || Star;
@@ -68,22 +68,22 @@ export default function BadgeList({ badges, userBadges }: BadgeListProps) {
                     return (
                         <div
                             key={badge.id}
-                            className={`relative p-4 rounded-2xl border transition-all duration-200 group ${isEarned
+                            className={`relative p-4 rounded-2xl border transition-all duration-200 group min-w-0 ${isEarned
                                 ? 'bg-gradient-to-br from-purple-50 to-white border-purple-100 hover:shadow-md'
                                 : 'bg-gray-50 border-gray-100 grayscale opacity-70'
                                 }`}
                         >
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${isEarned
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 flex-shrink-0 ${isEarned
                                 ? 'bg-white shadow-sm text-purple-600'
                                 : 'bg-gray-200 text-gray-400'
                                 }`}>
                                 {isEarned ? <Icon className="h-6 w-6" /> : <Lock className="h-5 w-5" />}
                             </div>
 
-                            <h3 className={`font-bold text-sm mb-1 ${isEarned ? 'text-gray-900' : 'text-gray-500'}`}>
+                            <h3 className={`font-bold text-xs sm:text-sm mb-1 break-words leading-tight ${isEarned ? 'text-gray-900' : 'text-gray-500'}`}>
                                 {badge.name}
                             </h3>
-                            <p className="text-xs text-gray-500 leading-tight">
+                            <p className="text-[10px] sm:text-xs text-gray-500 leading-tight break-words">
                                 {badge.description}
                             </p>
 
