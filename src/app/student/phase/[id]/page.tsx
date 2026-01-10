@@ -35,15 +35,23 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
     const [phase, setPhase] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [videoCompleted, setVideoCompleted] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
-    const [submissionType, setSubmissionType] = useState<'github' | 'file'>('github');
-    const [githubUrl, setGithubUrl] = useState('');
-    const [notes, setNotes] = useState('');
+    const [submittingIndex, setSubmittingIndex] = useState<number | null>(null);
+    const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+
+    // Multiple submissions state
+    const [submissions, setSubmissions] = useState<Record<number, any>>({});
+    const [formData, setFormData] = useState<Record<number, {
+        submissionType: 'github' | 'file';
+        githubUrl: string;
+        notes: string;
+        selectedFile: File | null;
+        existingFileUrl: string | null;
+        success?: string | null;
+        error?: string | null;
+    }>>({});
+
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [uploadingFile, setUploadingFile] = useState(false);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [existingFileUrl, setExistingFileUrl] = useState<string | null>(null);
     const [isVideoStarted, setIsVideoStarted] = useState(false);
 
     // Time tracking
@@ -80,28 +88,44 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 if (phaseError) throw phaseError;
                 setPhase(phaseData);
 
-                // Fetch existing submission
+                // Fetch all submissions for this phase
                 const { data: subData } = await supabase
                     .from('submissions')
                     .select('*')
                     .eq('phase_id', id)
-                    .eq('student_id', user?.id)
-                    .single();
+                    .eq('student_id', user?.id);
+
+                const submissionsMap: Record<number, any> = {};
+                const initialFormData: any = {};
+
+                // Initialize form data for all required assignments
+                const totalAssignments = phaseData.total_assignments || 1;
+                for (let i = 1; i <= totalAssignments; i++) {
+                    initialFormData[i] = {
+                        submissionType: phaseData.allowed_submission_type === 'file' ? 'file' : 'github',
+                        githubUrl: '',
+                        notes: '',
+                        selectedFile: null,
+                        existingFileUrl: null
+                    };
+                }
 
                 if (subData) {
-                    setSubmissionType(subData.submission_type);
-                    setGithubUrl(subData.github_url || '');
-                    setNotes(subData.notes || '');
-                    setExistingFileUrl(subData.file_url || null);
-                } else {
-                    // Set default based on allowed type
-                    if (phaseData.allowed_submission_type === 'file') {
-                        setSubmissionType('file');
-                    } else if (phaseData.allowed_submission_type === 'github') {
-                        setSubmissionType('github');
-                    }
-                    // 'both' defaults to 'github' as per initial state
+                    subData.forEach(sub => {
+                        const idx = sub.assignment_index || 1;
+                        submissionsMap[idx] = sub;
+                        initialFormData[idx] = {
+                            submissionType: sub.submission_type,
+                            githubUrl: sub.github_url || '',
+                            notes: sub.notes || '',
+                            selectedFile: null,
+                            existingFileUrl: sub.file_url || null
+                        };
+                    });
                 }
+
+                setSubmissions(submissionsMap);
+                setFormData(initialFormData);
 
                 // Fetch activity stats
                 const { data: activityData } = await supabase
@@ -284,44 +308,55 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         }
     };
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         if (!isValidAssignmentFileType(file)) {
-            setError('Invalid file type. Please upload PDF, JPG, or PNG files only.');
+            setFormData(prev => ({
+                ...prev,
+                [index]: { ...prev[index], error: 'Invalid file type. Please upload PDF, JPG, or PNG files only.' }
+            }));
             return;
         }
 
         if (!isValidFileSize(file, 2)) {
-            setError(`File size must be less than 2MB. Current size: ${formatFileSize(file.size)}`);
+            setFormData(prev => ({
+                ...prev,
+                [index]: { ...prev[index], error: `File size must be less than 2MB. Current size: ${formatFileSize(file.size)}` }
+            }));
             return;
         }
 
-        setSelectedFile(file);
-        setError(null);
+        setFormData(prev => ({
+            ...prev,
+            [index]: { ...prev[index], selectedFile: file, error: null }
+        }));
     };
 
-    const handleRemoveFile = () => {
-        setSelectedFile(null);
-        setExistingFileUrl(null);
+    const handleRemoveFile = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            [index]: { ...prev[index], selectedFile: null, existingFileUrl: null }
+        }));
     };
 
-    const handleFileUpload = async () => {
-        if (!selectedFile || !user) return null;
+    const handleFileUpload = async (index: number) => {
+        const data = formData[index];
+        if (!data?.selectedFile || !user) return null;
 
-        setUploadingFile(true);
-        setError(null);
+        setUploadingIndex(index);
+        setFormData(prev => ({ ...prev, [index]: { ...prev[index], error: null } }));
 
         try {
-            const fileExt = selectedFile.name.split('.').pop();
-            // Use a fixed filename to overwrite previous submissions and save storage
-            const fileName = `${user.id}/${id}/submission.${fileExt}`;
+            const fileExt = data.selectedFile.name.split('.').pop();
+            // Use index in filename to avoid clashes
+            const fileName = `${user.id}/${id}/submission_${index}.${fileExt}`;
             const filePath = `${fileName}`;
 
             const { error: uploadError } = await supabase.storage
                 .from('student-submissions')
-                .upload(filePath, selectedFile, {
+                .upload(filePath, data.selectedFile, {
                     cacheControl: '3600',
                     upsert: true
                 });
@@ -332,52 +367,63 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 .from('student-submissions')
                 .getPublicUrl(filePath);
 
-            // Add a timestamp to force browser cache refresh just for the display/download URL
             return `${publicUrl}?t=${Date.now()}`;
         } catch (error: any) {
             console.error('Error uploading file:', error);
-            setError('Failed to upload file: ' + error.message);
+            setFormData(prev => ({
+                ...prev,
+                [index]: { ...prev[index], error: 'Failed to upload file: ' + error.message }
+            }));
             return null;
         } finally {
-            setUploadingFile(false);
+            setUploadingIndex(null);
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent, index: number) => {
         e.preventDefault();
         if (!user) return;
 
         if (!isUnlocked) {
-            setError('Please complete the video lecture before submitting your assignment.');
+            setFormData(prev => ({
+                ...prev,
+                [index]: { ...prev[index], error: 'Please complete the video lecture before submitting your assignment.' }
+            }));
             return;
         }
 
-        setError(null);
-        setSuccess(null);
+        const data = formData[index];
+        setFormData(prev => ({ ...prev, [index]: { ...prev[index], error: null, success: null } }));
 
         // Validation
-        let finalFileUrl = existingFileUrl;
+        let finalFileUrl = data.existingFileUrl;
 
-        if (submissionType === 'github') {
-            if (!githubUrl || !isValidGitHubUrl(githubUrl)) {
-                setError('Please enter a valid GitHub repository URL (e.g., https://github.com/username/repo)');
+        if (data.submissionType === 'github') {
+            if (!data.githubUrl || !isValidGitHubUrl(data.githubUrl)) {
+                setFormData(prev => ({
+                    ...prev,
+                    [index]: { ...prev[index], error: 'Please enter a valid GitHub repository URL (e.g., https://github.com/username/repo)' }
+                }));
                 return;
             }
-        } else if (submissionType === 'file') {
-            if (!selectedFile && !existingFileUrl) {
-                setError('Please select a file to upload.');
+        } else if (data.submissionType === 'file') {
+            if (!data.selectedFile && !data.existingFileUrl) {
+                setFormData(prev => ({
+                    ...prev,
+                    [index]: { ...prev[index], error: 'Please select a file to upload.' }
+                }));
                 return;
             }
         }
 
-        setSubmitting(true);
+        setSubmittingIndex(index);
 
         try {
             // Upload file if needed
-            if (submissionType === 'file' && selectedFile) {
-                const uploadedUrl = await handleFileUpload();
+            if (data.submissionType === 'file' && data.selectedFile) {
+                const uploadedUrl = await handleFileUpload(index);
                 if (!uploadedUrl) {
-                    setSubmitting(false);
+                    setSubmittingIndex(null);
                     return;
                 }
                 finalFileUrl = uploadedUrl;
@@ -388,35 +434,54 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 .upsert({
                     student_id: user.id,
                     phase_id: id,
-                    submission_type: submissionType,
-                    github_url: submissionType === 'github' ? githubUrl : null,
-                    file_url: submissionType === 'file' ? finalFileUrl : null,
-                    notes,
+                    assignment_index: index,
+                    submission_type: data.submissionType,
+                    github_url: data.submissionType === 'github' ? data.githubUrl : null,
+                    file_url: data.submissionType === 'file' ? finalFileUrl : null,
+                    notes: data.notes,
                     submitted_at: new Date().toISOString(),
                     status: 'valid'
                 }, {
-                    onConflict: 'student_id,phase_id'
+                    onConflict: 'student_id,phase_id,assignment_index'
                 });
 
             if (subError) throw subError;
 
-            setSuccess('Assignment submitted successfully!');
-            if (finalFileUrl) setExistingFileUrl(finalFileUrl);
-            setSelectedFile(null);
+            setFormData(prev => ({
+                ...prev,
+                [index]: {
+                    ...prev[index],
+                    success: 'Assignment submitted successfully!',
+                    existingFileUrl: finalFileUrl || prev[index].existingFileUrl,
+                    selectedFile: null
+                }
+            }));
+
+            // Register completion in local submissions state
+            setSubmissions(prev => ({
+                ...prev,
+                [index]: {
+                    ...prev[index],
+                    submitted_at: new Date().toISOString() // Mock for UI
+                }
+            }));
 
             // Log activity
             await supabase.from('activity_logs').insert({
                 student_id: user.id,
                 phase_id: id,
                 activity_type: 'SUBMISSION_CREATED',
-                payload: { type: submissionType }
+                payload: { type: data.submissionType, index }
             });
 
         } catch (err: any) {
             console.error('Submission error:', err);
-            setError(err.message);
+            setFormData(prev => ({
+                ...prev,
+                [index]: { ...prev[index], error: err.message }
+            }));
         } finally {
-            setSubmitting(false);
+            setSubmittingIndex(null);
         }
     };
 
@@ -593,170 +658,218 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
                 {/* Sidebar: Submission */}
                 <div className="space-y-8">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-24">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-24 max-h-[85vh] overflow-y-auto">
                         <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
                             <Send className="mr-2 h-5 w-5 text-blue-600" />
-                            Submit Assignment
+                            Submit Assignments
                         </h2>
 
                         {!isUnlocked && phase?.min_seconds_required > 0 && (
                             <div className="mb-6 p-4 bg-orange-50 border border-orange-100 rounded-xl flex items-start">
                                 <AlertCircle className="h-5 w-5 text-orange-600 mr-3 shrink-0 mt-0.5" />
                                 <p className="text-sm text-orange-800">
-                                    <strong>Video Required:</strong> Please complete the video lecture before submitting your assignment.
+                                    <strong>Video Required:</strong> Please complete the video lecture before submitting your assignments.
                                 </p>
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {phase.allowed_submission_type === 'both' && (
-                                <div className="space-y-3">
-                                    <label className="text-sm font-semibold text-gray-700 block">Submission Type</label>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button
-                                            type="button"
-                                            disabled={!isUnlocked}
-                                            onClick={() => setSubmissionType('github')}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center ${submissionType === 'github'
-                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                        >
-                                            <Github className="mr-2 h-4 w-4" /> GitHub
-                                        </button>
-                                        <button
-                                            type="button"
-                                            disabled={!isUnlocked}
-                                            onClick={() => setSubmissionType('file')}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center ${submissionType === 'file'
-                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                        >
-                                            <FileText className="mr-2 h-4 w-4" /> File
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
+                        {success && (
+                            <div className="mb-6 p-4 bg-green-50 border border-green-100 rounded-xl flex items-start">
+                                <CheckCircle2 className="h-5 w-5 text-green-600 mr-3 shrink-0 mt-0.5" />
+                                <p className="text-sm text-green-800">{success}</p>
+                            </div>
+                        )}
 
-                            {submissionType === 'github' ? (
-                                <div className="space-y-2">
-                                    <label htmlFor="githubUrl" className="text-sm font-semibold text-gray-700 block text-black">GitHub Repository URL</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-black">
-                                            <Github className="h-4 w-4 text-gray-400" />
+                        <div className="space-y-12">
+                            {Array.from({ length: phase.total_assignments || 1 }, (_, i) => i + 1).map((idx) => {
+                                const data = formData[idx] || {
+                                    submissionType: 'github',
+                                    githubUrl: '',
+                                    notes: '',
+                                    selectedFile: null,
+                                    existingFileUrl: null
+                                };
+                                const isSubmitted = !!submissions[idx];
+
+                                return (
+                                    <div key={idx} className={`space-y-6 pb-8 ${idx < (phase.total_assignments || 1) ? 'border-b border-gray-100' : ''}`}>
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-md font-bold text-gray-800 flex items-center">
+                                                Assignment #{idx}
+                                                {isSubmitted && (
+                                                    <span className="ml-2 flex items-center text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase tracking-wider font-extrabold">
+                                                        <CheckCircle2 className="h-2 w-2 mr-1" />
+                                                        Completed
+                                                    </span>
+                                                )}
+                                            </h3>
                                         </div>
-                                        <input
-                                            id="githubUrl"
-                                            type="url"
-                                            disabled={!isUnlocked}
-                                            required={submissionType === 'github'}
-                                            placeholder="https://github.com/user/repo"
-                                            value={githubUrl}
-                                            onChange={(e) => setGithubUrl(e.target.value)}
-                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-50 disabled:text-gray-400"
-                                        />
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-gray-700 block">Upload File</label>
-                                    {selectedFile || existingFileUrl ? (
-                                        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center overflow-hidden">
-                                                    <FileText className="h-5 w-5 text-blue-500 mr-2 shrink-0" />
-                                                    <div className="truncate">
-                                                        <p className="text-sm font-medium text-gray-900 truncate">
-                                                            {selectedFile ? selectedFile.name : 'Submitted File'}
-                                                        </p>
-                                                        {selectedFile && (
-                                                            <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
-                                                        )}
-                                                        {!selectedFile && existingFileUrl && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => handleDownloadAssignment(e, existingFileUrl)}
-                                                                className="text-xs text-blue-600 hover:underline bg-transparent border-0 p-0 cursor-pointer"
-                                                            >
-                                                                View Submitted
-                                                            </button>
-                                                        )}
+
+                                        <form onSubmit={(e) => handleSubmit(e, idx)} className="space-y-6">
+                                            {phase.allowed_submission_type === 'both' && (
+                                                <div className="space-y-3">
+                                                    <label className="text-sm font-semibold text-gray-700 block">Submission Type</label>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button
+                                                            type="button"
+                                                            disabled={!isUnlocked}
+                                                            onClick={() => setFormData(prev => ({
+                                                                ...prev,
+                                                                [idx]: { ...prev[idx], submissionType: 'github' }
+                                                            }))}
+                                                            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center ${data.submissionType === 'github'
+                                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                        >
+                                                            <Github className="mr-2 h-4 w-4" /> GitHub
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            disabled={!isUnlocked}
+                                                            onClick={() => setFormData(prev => ({
+                                                                ...prev,
+                                                                [idx]: { ...prev[idx], submissionType: 'file' }
+                                                            }))}
+                                                            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center justify-center ${data.submissionType === 'file'
+                                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                        >
+                                                            <FileText className="mr-2 h-4 w-4" /> File
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                {isUnlocked && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleRemoveFile}
-                                                        className="ml-2 p-1 text-gray-400 hover:text-red-500"
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </button>
-                                                )}
+                                            )}
+
+                                            {data.submissionType === 'github' ? (
+                                                <div className="space-y-2">
+                                                    <label htmlFor={`githubUrl-${idx}`} className="text-sm font-semibold text-gray-700 block text-black">GitHub Repository URL</label>
+                                                    <div className="relative">
+                                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-black">
+                                                            <Github className="h-4 w-4 text-gray-400" />
+                                                        </div>
+                                                        <input
+                                                            id={`githubUrl-${idx}`}
+                                                            type="url"
+                                                            disabled={!isUnlocked}
+                                                            required={data.submissionType === 'github'}
+                                                            placeholder="https://github.com/user/repo"
+                                                            value={data.githubUrl}
+                                                            onChange={(e) => setFormData(prev => ({
+                                                                ...prev,
+                                                                [idx]: { ...prev[idx], githubUrl: e.target.value }
+                                                            }))}
+                                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-50 disabled:text-gray-400"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-semibold text-gray-700 block">Upload File</label>
+                                                    {data.selectedFile || data.existingFileUrl ? (
+                                                        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center overflow-hidden">
+                                                                    <FileText className="h-5 w-5 text-blue-500 mr-2 shrink-0" />
+                                                                    <div className="truncate">
+                                                                        <p className="text-sm font-medium text-gray-900 truncate">
+                                                                            {data.selectedFile ? data.selectedFile.name : 'Submitted File'}
+                                                                        </p>
+                                                                        {data.selectedFile && (
+                                                                            <p className="text-xs text-gray-500">{formatFileSize(data.selectedFile.size)}</p>
+                                                                        )}
+                                                                        {!data.selectedFile && data.existingFileUrl && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => handleDownloadAssignment(e, data.existingFileUrl!)}
+                                                                                className="text-xs text-blue-600 hover:underline bg-transparent border-0 p-0 cursor-pointer"
+                                                                            >
+                                                                                View Submitted
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                {isUnlocked && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleRemoveFile(idx)}
+                                                                        className="ml-2 p-1 text-gray-400 hover:text-red-500"
+                                                                    >
+                                                                        <X className="h-4 w-4" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors bg-gray-50">
+                                                            <input
+                                                                type="file"
+                                                                id={`file-upload-${idx}`}
+                                                                className="hidden"
+                                                                accept=".pdf,image/png,image/jpeg,image/jpg"
+                                                                onChange={(e) => handleFileSelect(e, idx)}
+                                                                disabled={!isUnlocked}
+                                                            />
+                                                            <label htmlFor={`file-upload-${idx}`} className={`cursor-pointer flex flex-col items-center ${!isUnlocked ? 'pointer-events-none opacity-50' : ''}`}>
+                                                                <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                                                                <span className="text-sm font-medium text-gray-700">Click to upload</span>
+                                                                <span className="text-xs text-gray-500 mt-1">PDF, PNG, JPG (max 2MB)</span>
+                                                            </label>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-2">
+                                                <label htmlFor={`notes-${idx}`} className="text-sm font-semibold text-gray-700 block text-black">Notes (Optional)</label>
+                                                <textarea
+                                                    id={`notes-${idx}`}
+                                                    rows={3}
+                                                    disabled={!isUnlocked}
+                                                    placeholder="Any additional information..."
+                                                    value={data.notes}
+                                                    onChange={(e) => setFormData(prev => ({
+                                                        ...prev,
+                                                        [idx]: { ...prev[idx], notes: e.target.value }
+                                                    }))}
+                                                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none text-black disabled:bg-gray-50 disabled:text-gray-400"
+                                                />
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors bg-gray-50">
-                                            <input
-                                                type="file"
-                                                id="file-upload"
-                                                className="hidden"
-                                                accept=".pdf,image/png,image/jpeg,image/jpg"
-                                                onChange={handleFileSelect}
-                                                disabled={!isUnlocked}
-                                            />
-                                            <label htmlFor="file-upload" className={`cursor-pointer flex flex-col items-center ${!isUnlocked ? 'pointer-events-none opacity-50' : ''}`}>
-                                                <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                                                <span className="text-sm font-medium text-gray-700">Click to upload</span>
-                                                <span className="text-xs text-gray-500 mt-1">PDF, PNG, JPG (max 2MB)</span>
-                                            </label>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
 
-                            <div className="space-y-2">
-                                <label htmlFor="notes" className="text-sm font-semibold text-gray-700 block text-black">Notes (Optional)</label>
-                                <textarea
-                                    id="notes"
-                                    rows={4}
-                                    disabled={!isUnlocked}
-                                    placeholder="Any additional information..."
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none text-black disabled:bg-gray-50 disabled:text-gray-400"
-                                />
-                            </div>
+                                            {data.error && (
+                                                <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg flex items-start animate-pulse">
+                                                    <AlertCircle className="h-4 w-4 mr-2 mt-0.5 shrink-0" />
+                                                    {data.error}
+                                                </div>
+                                            )}
 
-                            {error && (
-                                <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg flex items-start animate-pulse">
-                                    <AlertCircle className="h-4 w-4 mr-2 mt-0.5 shrink-0" />
-                                    {error}
-                                </div>
-                            )}
+                                            {data.success && (
+                                                <div className="p-3 bg-green-50 text-green-700 text-sm rounded-lg flex items-start">
+                                                    <CheckCircle2 className="h-4 w-4 mr-2 mt-0.5 shrink-0" />
+                                                    {data.success}
+                                                </div>
+                                            )}
 
-                            {success && (
-                                <div className="p-3 bg-green-50 text-green-700 text-sm rounded-lg flex items-start">
-                                    <CheckCircle2 className="h-4 w-4 mr-2 mt-0.5 shrink-0" />
-                                    {success}
-                                </div>
-                            )}
-
-                            <button
-                                type="submit"
-                                disabled={submitting || !isUnlocked}
-                                className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
-                            >
-                                {submitting ? (
-                                    <>
-                                        <Loader2 className="animate-spin mr-2 h-5 w-5" />
-                                        Submitting...
-                                    </>
-                                ) : (
-                                    'Submit Assignment'
-                                )}
-                            </button>
-                        </form>
+                                            <button
+                                                type="submit"
+                                                disabled={submittingIndex === idx || !isUnlocked}
+                                                className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                                            >
+                                                {submittingIndex === idx ? (
+                                                    <>
+                                                        <Loader2 className="animate-spin mr-2 h-5 w-5" />
+                                                        Submitting...
+                                                    </>
+                                                ) : (
+                                                    isSubmitted ? 'Update Assignment' : 'Submit Assignment'
+                                                )}
+                                            </button>
+                                        </form>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             </div>

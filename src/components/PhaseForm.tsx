@@ -42,6 +42,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
         end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         is_active: true,
         min_seconds_required: 0,
+        total_assignments: 1,
     });
 
     useEffect(() => {
@@ -422,6 +423,25 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                             <span className="ml-3 text-sm text-gray-500">minutes</span>
                         </div>
                         <p className="mt-1 text-xs text-gray-400 italic">Students must spend at least this much time on the phase page before they can submit.</p>
+                    </div>
+
+                    <div className="sm:col-span-6">
+                        <label htmlFor="total_assignments" className="block text-sm font-bold text-gray-700">
+                            Total Assignments Required
+                        </label>
+                        <div className="mt-1">
+                            <input
+                                type="number"
+                                name="total_assignments"
+                                id="total_assignments"
+                                min="1"
+                                max="10"
+                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
+                                value={formData.total_assignments || 1}
+                                onChange={(e) => setFormData({ ...formData, total_assignments: parseInt(e.target.value) })}
+                            />
+                        </div>
+                        <p className="mt-1 text-xs text-gray-400 italic">How many separate assignments must the student submit for this phase?</p>
                     </div>
 
                     <div className="sm:col-span-6 border-t border-gray-100 pt-6">

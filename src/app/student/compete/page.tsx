@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trophy, Flame, Users, CheckCircle2, Loader2, ArrowLeft, Medal } from 'lucide-react';
+import { Trophy, Flame, Users, CheckCircle2, Loader2, ArrowLeft, Medal, Zap } from 'lucide-react';
 import Link from 'next/link';
 import BadgeList from '@/components/gamification/BadgeList';
 
@@ -65,35 +65,19 @@ export default function CompetePage() {
             const { data: bData } = await supabase.from('badges').select('*');
             setBadges(bData || []);
 
-            // 2. Fetch Leaderboard (Top 10 by completed phases, then streak)
-            // Note: This requires a query that counts valid submissions per user
+            // 2. Fetch Leaderboard using new Optimized RPC
             const { data: lbData, error: lbError } = await supabase
-                .from('users')
-                .select(`
-                    id, 
-                    name, 
-                    current_streak,
-                    submissions:submissions(count)
-                `)
-                .eq('role', 'student')
-                .eq('status', 'active');
+                .rpc('get_leaderboard_v2');
 
             if (lbError) throw lbError;
 
-            // Process leaderboard data
-            // We use 'submissions(count)' which returns an array with a count object
             const processedLB = (lbData || []).map((entry: any) => ({
-                id: entry.id,
-                name: entry.name,
+                id: entry.user_id,
+                name: entry.user_name,
                 current_streak: entry.current_streak || 0,
-                // In Supabase JS, count might be different depending on query structure
-                completed_phases: entry.submissions?.[0]?.count || 0
-            })).sort((a, b) => {
-                if (b.completed_phases !== a.completed_phases) {
-                    return b.completed_phases - a.completed_phases;
-                }
-                return b.current_streak - a.current_streak;
-            }).slice(0, 10);
+                completed_phases: Number(entry.completed_phases) || 0,
+                activity_points: entry.activity_points || 0
+            }));
 
             setLeaderboard(processedLB);
 
@@ -128,8 +112,13 @@ export default function CompetePage() {
                 setPhaseStats(stats);
             }
 
-        } catch (error) {
-            console.error('Error fetching compete data:', error);
+        } catch (error: any) {
+            console.error('Error fetching compete data:', {
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint
+            });
         } finally {
             setLoading(false);
         }
@@ -268,6 +257,10 @@ export default function CompetePage() {
                                                     <span className="flex items-center">
                                                         <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" />
                                                         {entry.completed_phases} Phases
+                                                    </span>
+                                                    <span className="flex items-center">
+                                                        <Zap className="h-3 w-3 mr-1 text-yellow-500" />
+                                                        {(entry as any).activity_points || 0} Points
                                                     </span>
                                                     <span className="flex items-center">
                                                         <Flame className={`h-3 w-3 mr-1 ${entry.current_streak > 0 ? 'text-orange-500' : 'text-gray-300'}`} />

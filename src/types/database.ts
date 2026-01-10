@@ -47,6 +47,7 @@ export interface Phase {
   pause_reason?: string;
   paused_at?: string;
   min_seconds_required: number;
+  total_assignments: number;
   created_at: string;
   updated_at: string;
 }
@@ -56,6 +57,7 @@ export interface Submission {
   id: string;
   student_id: string;
   phase_id: string;
+  assignment_index: number;
   submission_type: SubmissionType;
   github_url?: string;
   file_url?: string;
