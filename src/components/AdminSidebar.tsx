@@ -17,7 +17,7 @@ const navItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Phases', href: '/admin/phases', icon: Layers },
     { name: 'Students', href: '/admin/students', icon: Users },
-    { name: 'Import CSV', href: '/admin/import', icon: Upload },
+    { name: 'Import CSV', href: '/admin/student-import', icon: Upload },
 ];
 
 export default function AdminSidebar() {

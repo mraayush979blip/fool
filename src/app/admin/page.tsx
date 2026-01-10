@@ -254,7 +254,7 @@ export default function AdminDashboard() {
                             <span className="text-blue-300 group-hover:text-blue-600 transition-colors">→</span>
                         </Link>
 
-                        <Link href="/admin/import" className="w-full flex items-center justify-between p-4 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors group">
+                        <Link href="/admin/student-import" className="w-full flex items-center justify-between p-4 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors group">
                             <div className="flex items-center">
                                 <Upload className="h-5 w-5 text-emerald-600 mr-3" />
                                 <span className="text-sm font-bold text-emerald-700">Import Students</span>
