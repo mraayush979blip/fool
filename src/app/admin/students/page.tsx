@@ -20,6 +20,7 @@ export default function StudentListPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'revoked'>('all');
+    const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
         fetchStudents();
@@ -58,19 +59,14 @@ export default function StudentListPage() {
         const newStatus = student.status === 'active' ? 'revoked' : 'active';
         if (!confirm(`Are you sure you want to ${newStatus === 'revoked' ? 'revoke access for' : 'restore access for'} ${student.name}?`)) return;
 
+        setActionLoading(true);
         try {
             if (newStatus === 'active') {
-                // Use the RPC for restoration to handle phase bypass
-                const { data, error } = await supabase.rpc('admin_restore_student', {
+                const { error } = await supabase.rpc('admin_restore_student', {
                     target_student_id: student.id
                 });
-
                 if (error) throw error;
-
-                // Optional: Show success message based on data
-                // console.log('Restoration result:', data);
             } else {
-                // Use standard update for revocation
                 const { error } = await supabase
                     .from('users')
                     .update({ status: newStatus })
@@ -78,10 +74,9 @@ export default function StudentListPage() {
 
                 if (error) throw error;
 
-                // Log industrial event
                 await supabase.from('activity_logs').insert({
                     student_id: student.id,
-                    phase_id: '00000000-0000-0000-0000-000000000000', // System level
+                    phase_id: '00000000-0000-0000-0000-000000000000',
                     activity_type: 'ACCESS_REVOKED',
                     payload: { admin_id: (await supabase.auth.getUser()).data.user?.id }
                 });
@@ -90,7 +85,57 @@ export default function StudentListPage() {
             fetchStudents();
         } catch (error) {
             console.error('Error updating student status:', error);
-            alert('Failed to update student status. Check console for details.');
+            alert('Failed to update student status.');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleBulkRevoke = async () => {
+        const activeCount = students.filter(s => s.status === 'active').length;
+        if (activeCount === 0) {
+            alert('No active students to revoke.');
+            return;
+        }
+
+        if (!confirm(`CAUTION: Are you sure you want to revoke access for ALL ${activeCount} active students? This will take effect immediately.`)) return;
+
+        setActionLoading(true);
+        try {
+            const { data, error } = await supabase.rpc('admin_bulk_revoke_students');
+            if (error) throw error;
+
+            alert(`Success! ${data.affected_count} students were revoked.`);
+            fetchStudents();
+        } catch (error) {
+            console.error('Error in bulk revoke:', error);
+            alert('Failed to perform bulk revocation.');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleBulkRestore = async () => {
+        const revokedCount = students.filter(s => s.status === 'revoked').length;
+        if (revokedCount === 0) {
+            alert('No revoked students to restore.');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to restore access for ALL ${revokedCount} revoked students? This will also bypass any missed mandatory phases for them.`)) return;
+
+        setActionLoading(true);
+        try {
+            const { data, error } = await supabase.rpc('admin_bulk_restore_students');
+            if (error) throw error;
+
+            alert(`Success! ${data.affected_count} students were restored. Total bypassed phases: ${data.total_bypassed_phases}`);
+            fetchStudents();
+        } catch (error) {
+            console.error('Error in bulk restore:', error);
+            alert('Failed to perform bulk restoration.');
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -133,17 +178,33 @@ export default function StudentListPage() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <div className="flex items-center space-x-2 w-full md:w-auto">
-                    <Filter className="h-5 w-5 text-gray-400" />
-                    <select
-                        className="block w-full md:w-40 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border"
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value as any)}
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <button
+                        onClick={handleBulkRestore}
+                        disabled={actionLoading || loading}
+                        className="flex-1 md:flex-none inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 transition-colors"
                     >
-                        <option value="all">All Students</option>
-                        <option value="active">Active Only</option>
-                        <option value="revoked">Revoked Only</option>
-                    </select>
+                        <Shield className="h-4 w-4 mr-2" /> Restore All
+                    </button>
+                    <button
+                        onClick={handleBulkRevoke}
+                        disabled={actionLoading || loading}
+                        className="flex-1 md:flex-none inline-flex items-center px-4 py-2 border border-rose-100 rounded-md shadow-sm text-sm font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50 transition-colors"
+                    >
+                        <ShieldOff className="h-4 w-4 mr-2" /> Revoke All
+                    </button>
+                    <div className="flex items-center space-x-2 border-l pl-2 ml-2">
+                        <Filter className="h-5 w-5 text-gray-400" />
+                        <select
+                            className="block w-full md:w-40 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border"
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value as any)}
+                        >
+                            <option value="all">All Students</option>
+                            <option value="active">Active Only</option>
+                            <option value="revoked">Revoked Only</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
