@@ -32,10 +32,21 @@ export default function StudentListPage() {
                 .from('users')
                 .select('*')
                 .eq('role', 'student')
-                .order('name', { ascending: true });
+                .order('roll_number', { ascending: true });
 
             if (error) throw error;
-            setStudents(data || []);
+
+            // Numeric sort for roll numbers (handling strings like '1', '10', '2')
+            const sortedData = (data || []).sort((a, b) => {
+                const numA = parseInt(a.roll_number || '0', 10);
+                const numB = parseInt(b.roll_number || '0', 10);
+                if (isNaN(numA) || isNaN(numB)) {
+                    return (a.roll_number || '').localeCompare(b.roll_number || '');
+                }
+                return numA - numB;
+            });
+
+            setStudents(sortedData);
         } catch (error) {
             console.error('Error fetching students:', error);
         } finally {
