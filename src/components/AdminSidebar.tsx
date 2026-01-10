@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import InstallPWA from './InstallPWA';
 
 const navItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -58,7 +59,8 @@ export default function AdminSidebar() {
                     })}
                 </nav>
             </div>
-            <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+            <div className="flex-shrink-0 flex flex-col border-t border-gray-200 p-4 space-y-4">
+                <InstallPWA />
                 <div className="flex-shrink-0 w-full group block">
                     <div className="flex items-center">
                         <div className="ml-3">

@@ -6,6 +6,7 @@ import { LogOut, User as UserIcon, BookOpen, Trophy, ShoppingBag } from 'lucide-
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ActivityTracker from '@/components/gamification/ActivityTracker';
+import InstallPWA from '@/components/InstallPWA';
 
 export default function StudentLayout({
     children,
@@ -81,6 +82,7 @@ export default function StudentLayout({
                             </div>
 
                             <div className="flex items-center space-x-4">
+                                <InstallPWA />
                                 <div className="hidden md:flex flex-col items-end mr-2">
                                     <span className="text-sm font-semibold text-gray-900">{user?.name || user?.email}</span>
                                     <span className="text-xs text-gray-500 capitalize">{user?.role}</span>
