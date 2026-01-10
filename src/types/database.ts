@@ -43,6 +43,7 @@ export interface Phase {
   end_date: string;
   status: PhaseStatus;
   is_active: boolean;
+  is_mandatory: boolean;
   is_paused: boolean;
   pause_reason?: string;
   paused_at?: string;

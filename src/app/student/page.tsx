@@ -200,8 +200,13 @@ export default function StudentDashboard() {
                                         P{phase.phase_number}
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold group-hover:translate-x-1 transition-all" style={{ color: 'var(--foreground)' }}>
+                                        <h3 className="text-lg font-bold group-hover:translate-x-1 transition-all flex items-center" style={{ color: 'var(--foreground)' }}>
                                             {phase.title}
+                                            {!phase.is_mandatory && (
+                                                <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-gray-500 rounded uppercase tracking-wider">
+                                                    Optional
+                                                </span>
+                                            )}
                                         </h3>
                                         <p className="text-sm line-clamp-1 max-w-xl" style={{ color: 'var(--text-muted, #6b7280)' }}>
                                             {phase.description}

@@ -41,6 +41,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
         start_date: new Date().toISOString().split('T')[0],
         end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         is_active: true,
+        is_mandatory: true,
         min_seconds_required: 0,
         total_assignments: 1,
     });
@@ -452,6 +453,22 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                             />
                         </div>
                         <p className="mt-1 text-xs text-gray-400 italic">How many separate assignments must the student submit for this phase?</p>
+                    </div>
+
+                    <div className="sm:col-span-6 border-t border-gray-100 pt-6">
+                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-900">Mandatory Phase</h3>
+                                <p className="text-xs text-gray-500">If disabled, students won't be revoked for missing this deadline.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, is_mandatory: !formData.is_mandatory })}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ring-2 ring-transparent ring-offset-2 ${formData.is_mandatory ? 'bg-blue-600' : 'bg-gray-200'}`}
+                            >
+                                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.is_mandatory ? 'translate-x-5' : 'translate-x-0'}`} />
+                            </button>
+                        </div>
                     </div>
 
                     <div className="sm:col-span-6 border-t border-gray-100 pt-6">

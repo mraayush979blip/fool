@@ -585,7 +585,14 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                         <div className="p-6 border-b border-gray-50">
                             <div className="flex items-baseline space-x-3 mb-2">
                                 <span className="bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-md text-sm font-bold">Phase {phase.phase_number}</span>
-                                <h1 className="text-2xl font-bold text-gray-900">{phase.title}</h1>
+                                <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                                    {phase.title}
+                                    {!phase.is_mandatory && (
+                                        <span className="ml-3 px-2 py-1 text-xs font-bold bg-gray-100 text-gray-500 rounded-lg uppercase tracking-wider">
+                                            Optional
+                                        </span>
+                                    )}
+                                </h1>
                             </div>
                             <p className="text-gray-600 leading-relaxed">{phase.description}</p>
                         </div>

@@ -5,8 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-const ACTIVITY_TIMEOUT_MS = 30 * 1000; // 30 seconds of no input = idle
-const AWARD_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
+const ACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes of no input = idle
+const AWARD_INTERVAL_MS = 60 * 1000; // 1 minute
 
 export default function ActivityTracker() {
     const { user } = useAuth();
