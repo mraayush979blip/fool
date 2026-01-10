@@ -224,16 +224,6 @@ export default function StorePage() {
                 </div>
             </div>
 
-            {/* Fake Permission Message */}
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl flex items-start space-x-3 shadow-sm animate-pulse">
-                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                <div>
-                    <p className="text-sm font-bold text-red-800">Ineligibility Warning</p>
-                    <p className="text-sm text-red-700">
-                        You are currently not eligible for some premium rewards. The admin has not given the permission to use the theme yet for your account status.
-                    </p>
-                </div>
-            </div>
 
             {/* Store Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
