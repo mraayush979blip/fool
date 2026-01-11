@@ -123,12 +123,32 @@ export default function StudentDashboard() {
         }
     }, [user?.id]);
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-[60vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good morning';
+        if (hour < 17) return 'Good afternoon';
+        return 'Good evening';
+    };
+
+    const DashboardSkeleton = () => (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-pulse">
+            <div className="h-32 md:h-48 bg-gray-200 dark:bg-gray-800 rounded-2xl w-full" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 rounded-xl" />
+                ))}
             </div>
-        );
+            <div className="space-y-4">
+                <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-48" />
+                {[1, 2, 3].map(i => (
+                    <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 rounded-2xl w-full" />
+                ))}
+            </div>
+        </div>
+    );
+
+    if (loading) {
+        return <DashboardSkeleton />;
     }
 
     return (
@@ -146,52 +166,62 @@ export default function StudentDashboard() {
                     />
                     <div className="absolute bottom-6 left-8 z-20">
                         <h2 className="text-2xl font-black text-white drop-shadow-md">
-                            Welcome back, {user.name}
+                            {getGreeting()}, {user.name}
                         </h2>
                     </div>
                 </div>
             )}
 
-            <header className={user?.equipped_banner ? 'hidden' : 'mb-10'}>
-                <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>My Learning Journey</h1>
-                <p className="mt-2" style={{ color: 'var(--text-muted, #4b5563)' }}>Track your progress and complete your training phases.</p>
+            <header className={(user?.equipped_banner && user.equipped_banner !== 'default') ? 'hidden' : 'mb-10 text-center md:text-left relative'}>
+                <div className="flex flex-col md:flex-row md:items-end md:justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
+                            {getGreeting()}, <span className="text-blue-600">{user?.name || 'Student'}</span>
+                        </h1>
+                        <p className="mt-2 text-lg font-medium opacity-80" style={{ color: 'var(--text-muted, #4b5563)' }}>Keep going, you're doing great!</p>
+                    </div>
+                    <div className="mt-4 md:mt-0 flex items-center justify-center md:justify-end space-x-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                        <span>Live • Updated {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-6 rounded-xl shadow-sm border transition-all flex items-center space-x-4" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}>
-                    <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--theme-primary, #2563eb)22', color: 'var(--theme-primary, #2563eb)' }}>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="p-5 rounded-2xl shadow-sm border transition-all flex flex-col items-center justify-center text-center space-y-2 group hover:shadow-md hover:-translate-y-1" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}>
+                    <div className="p-3 rounded-xl bg-blue-500/10 text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-all">
                         <BookOpen className="h-6 w-6" />
                     </div>
                     <div>
-                        <p className="text-sm font-medium uppercase" style={{ color: 'var(--text-muted, #6b7280)' }}>Active Phases</p>
-                        <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{phases.length}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted, #6b7280)' }}>Active</p>
+                        <p className="text-xl font-black" style={{ color: 'var(--foreground)' }}>{phases.length}</p>
                     </div>
                 </div>
-                <div className="p-6 rounded-xl shadow-sm border transition-all flex items-center space-x-4" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}>
-                    <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--theme-primary, #2563eb)22', color: 'var(--theme-primary, #2563eb)' }}>
+                <div className="p-5 rounded-2xl shadow-sm border transition-all flex flex-col items-center justify-center text-center space-y-2 group hover:shadow-md hover:-translate-y-1" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}>
+                    <div className="p-3 rounded-xl bg-green-500/10 text-green-600 group-hover:bg-green-500 group-hover:text-white transition-all">
                         <Trophy className="h-6 w-6" />
                     </div>
                     <div>
-                        <p className="text-sm font-medium uppercase" style={{ color: 'var(--text-muted, #6b7280)' }}>Completed</p>
-                        <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{stats.completedCount}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted, #6b7280)' }}>Done</p>
+                        <p className="text-xl font-black" style={{ color: 'var(--foreground)' }}>{stats.completedCount}</p>
                     </div>
                 </div>
-                <div className="p-6 rounded-xl shadow-sm border transition-all flex items-center space-x-4" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}>
-                    <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--theme-primary, #2563eb)22', color: 'var(--theme-primary, #2563eb)' }}>
+                <div className="p-5 rounded-2xl shadow-sm border transition-all flex flex-col items-center justify-center text-center space-y-2 group hover:shadow-md hover:-translate-y-1" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}>
+                    <div className="p-3 rounded-xl bg-yellow-500/10 text-yellow-600 group-hover:bg-yellow-500 group-hover:text-white transition-all">
                         <Zap className="h-6 w-6" />
                     </div>
                     <div>
-                        <p className="text-sm font-medium uppercase" style={{ color: 'var(--text-muted, #6b7280)' }}>Activity Points</p>
-                        <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{(stats as any).points || 0}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted, #6b7280)' }}>Points</p>
+                        <p className="text-xl font-black" style={{ color: 'var(--foreground)' }}>{(stats as any).points || 0}</p>
                     </div>
                 </div>
-                <div className="p-6 rounded-xl shadow-sm border transition-all flex items-center space-x-4" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}>
-                    <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--theme-primary, #2563eb)22', color: 'var(--theme-primary, #2563eb)' }}>
+                <div className="p-5 rounded-2xl shadow-sm border transition-all flex flex-col items-center justify-center text-center space-y-2 group hover:shadow-md hover:-translate-y-1" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}>
+                    <div className="p-3 rounded-xl bg-purple-500/10 text-purple-600 group-hover:bg-purple-500 group-hover:text-white transition-all">
                         <Clock className="h-6 w-6" />
                     </div>
                     <div>
-                        <p className="text-sm font-medium uppercase" style={{ color: 'var(--text-muted, #6b7280)' }}>Time Spent</p>
-                        <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{formatDuration(stats.totalTimeSeconds)}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted, #6b7280)' }}>Time</p>
+                        <p className="text-xl font-black" style={{ color: 'var(--foreground)' }}>{formatDuration(stats.totalTimeSeconds)}</p>
                     </div>
                 </div>
             </div>
@@ -207,43 +237,45 @@ export default function StudentDashboard() {
                         <p className="text-gray-500">No active phases available at the moment.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 gap-6">
                         {phases.map((phase) => (
                             <Link
                                 key={phase.id}
                                 href={`/student/phase/${phase.id}`}
-                                className="group p-6 rounded-xl shadow-sm border transition-all flex flex-col md:flex-row md:items-center justify-between"
+                                className="group p-5 rounded-2xl shadow-sm border transition-all flex flex-col md:flex-row md:items-center justify-between hover:shadow-xl hover:border-blue-500/30 active:scale-[0.98]"
                                 style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}
                             >
-                                <div className="flex items-center space-x-4">
+                                <div className="flex items-center space-x-5">
                                     <div
-                                        className="h-12 w-12 rounded-full flex items-center justify-center font-bold shrink-0 transition-all border"
-                                        style={{ backgroundColor: 'var(--theme-primary, #2563eb)22', color: 'var(--theme-primary, #2563eb)', borderColor: 'var(--theme-primary, #2563eb)44' }}
+                                        className="h-14 w-14 rounded-2xl flex items-center justify-center font-black shrink-0 transition-all border shadow-sm group-hover:rotate-3"
+                                        style={{ backgroundColor: 'var(--theme-primary, #2563eb)11', color: 'var(--theme-primary, #2563eb)', borderColor: 'var(--theme-primary, #2563eb)33' }}
                                     >
                                         P{phase.phase_number}
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold group-hover:translate-x-1 transition-all flex items-center" style={{ color: 'var(--foreground)' }}>
+                                        <h3 className="text-xl font-bold group-hover:text-blue-600 transition-colors flex items-center" style={{ color: 'var(--foreground)' }}>
                                             {phase.title}
                                             {!phase.is_mandatory && (
-                                                <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-gray-500 rounded uppercase tracking-wider">
+                                                <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-gray-400 rounded-full uppercase tracking-widest border border-gray-200">
                                                     Optional
                                                 </span>
                                             )}
                                         </h3>
-                                        <p className="text-sm line-clamp-1 max-w-xl" style={{ color: 'var(--text-muted, #6b7280)' }}>
+                                        <p className="text-sm line-clamp-1 max-w-xl mt-0.5" style={{ color: 'var(--text-muted, #6b7280)' }}>
                                             {phase.description}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="mt-4 md:mt-0 flex items-center space-x-6">
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-xs font-medium uppercase" style={{ color: 'var(--text-muted, #9ca3af)' }}>Status</span>
-                                        <span className={`text-sm font-bold ${submissions.has(phase.id) ? 'text-green-600' : 'text-orange-500'}`}>
-                                            {submissions.has(phase.id) ? 'Submitted' : 'Not Started'}
+                                <div className="mt-5 md:mt-0 flex items-center justify-between md:justify-end space-x-8 border-t md:border-t-0 pt-4 md:pt-0">
+                                    <div className="flex flex-col items-start md:items-end">
+                                        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted, #9ca3af)' }}>Status</span>
+                                        <span className={`text-sm font-black ${submissions.has(phase.id) ? 'text-green-500' : 'text-orange-400'}`}>
+                                            {submissions.has(phase.id) ? 'Completed' : 'Continue'}
                                         </span>
                                     </div>
-                                    <ChevronRight className="h-5 w-5 transition-all group-hover:translate-x-1" style={{ color: 'var(--theme-primary, #2563eb)' }} />
+                                    <div className="h-10 w-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
+                                        <ChevronRight className="h-5 w-5" />
+                                    </div>
                                 </div>
                             </Link>
                         ))}

@@ -9,10 +9,11 @@
 
 /* Force Light Mode strictly for the default experience */
 [data-theme='default'] {
-  --background: #ffffff;
+  --background: #fdfdfd;
   --foreground: #111827;
   --card-bg: #ffffff;
-  --card-border: #e5e7eb;
+  --card-bg-rgb: 255, 255, 255;
+  --card-border: #eef0f2;
   --text-muted: #6b7280;
 }
 
@@ -23,6 +24,7 @@
   --theme-primary: #ff00ff;
   /* neon pink */
   --card-bg: #1a0b2e;
+  --card-bg-rgb: 26, 11, 46;
   --card-border: #ff00ff44;
   --text-muted: #a5b4fc;
 }
@@ -34,6 +36,7 @@
   --theme-primary: #fbbf24;
   /* amber-400 */
   --card-bg: #111111;
+  --card-bg-rgb: 17, 17, 17;
   --card-border: #333333;
   --text-muted: #9ca3af;
 }
@@ -48,7 +51,41 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* App-like feel utilities */
+.glass {
+  background: rgba(var(--card-bg-rgb, 255, 255, 255), 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Animations */
+@keyframes nav-item-active {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-nav-active {
+  animation: nav-item-active 0.3s ease-in-out;
 }
 
 /* Robust fix for input visibility across all browsers */
