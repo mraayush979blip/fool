@@ -5,35 +5,30 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-    item_type VARCHAR;
-    is_owned BOOLEAN;
+    item_record RECORD;
+    user_id_val UUID := auth.uid();
 BEGIN
-    -- Check ownership
-    SELECT EXISTS(SELECT 1 FROM user_inventory WHERE user_id = auth.uid() AND item_id = item_id_param)
-    INTO is_owned;
-    
-    IF NOT is_owned THEN
-        RETURN jsonb_build_object('success', false, 'message', 'Item not owned');
+    -- 1. Check if item exists and user owns it
+    SELECT si.type, si.asset_value INTO item_record 
+    FROM store_items si
+    JOIN user_inventory ui ON si.id = ui.item_id
+    WHERE si.id = item_id_param AND ui.user_id = user_id_val;
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Item not owned or not found');
     END IF;
 
-    -- Get item type
-    SELECT type INTO item_type FROM store_items WHERE id = item_id_param;
-
-    -- Update user profile based on type
-    IF item_type = 'theme' THEN
-        UPDATE users SET equipped_theme = (SELECT asset_value FROM store_items WHERE id = item_id_param) WHERE id = auth.uid();
-    ELSIF item_type = 'banner' THEN
-        UPDATE users SET equipped_banner = (SELECT asset_value FROM store_items WHERE id = item_id_param) WHERE id = auth.uid();
+    -- 2. Update user profile based on item type
+    IF item_record.type = 'theme' THEN
+        UPDATE users SET equipped_theme = item_record.asset_value WHERE id = user_id_val;
+    ELSIF item_record.type = 'banner' THEN
+        UPDATE users SET equipped_banner = item_record.asset_value WHERE id = user_id_val;
+    ELSIF item_record.type = 'avatar' THEN
+        UPDATE users SET equipped_avatar = item_record.asset_value WHERE id = user_id_val;
     ELSE
-        -- For other types (frames, etc.), we might handle them differently or just log it for now.
-        -- Assuming 'avatar_frame' might be added to users table later or stored in a JSONB profile column.
-        RETURN jsonb_build_object('success', true, 'message', 'Equipped (Note: UI update required for this type)');
+        RETURN jsonb_build_object('success', false, 'message', 'Unknown item type: ' || item_record.type);
     END IF;
 
-    -- Update inventory is_equipped flag (optional, but good for UI)
-    -- First unequip same type
-    -- (This part is complex if multiple items of same type exist, keeping it simple: just track in users table is easier for now)
-    
-    RETURN jsonb_build_object('success', true, 'message', 'Item equipped successfully');
+    RETURN jsonb_build_object('success', true, 'message', 'Equipped successfully');
 END;
 $$;
