@@ -5,10 +5,12 @@
 -- 3. Current Streak (Tertiary)
 -- 4. Last Submission Time (Tie-breaker - earlier is better)
 
+DROP FUNCTION IF EXISTS get_leaderboard_v2();
 CREATE OR REPLACE FUNCTION get_leaderboard_v2()
 RETURNS TABLE (
     user_id UUID,
-    user_name VARCHAR,
+    user_name TEXT,
+    user_avatar TEXT,
     completed_phases BIGINT,
     activity_points INTEGER,
     current_streak INTEGER,
@@ -23,6 +25,7 @@ BEGIN
         SELECT 
             u.id as s_id,
             u.name as s_name,
+            u.equipped_avatar as s_avatar,
             u.points as s_points,
             u.current_streak as s_streak,
             COUNT(s.id) FILTER (WHERE s.status = 'valid') as s_phases,
@@ -35,6 +38,7 @@ BEGIN
     SELECT 
         s_id as user_id,
         s_name as user_name,
+        s_avatar as user_avatar,
         s_phases as completed_phases,
         s_points as activity_points,
         s_streak as current_streak,

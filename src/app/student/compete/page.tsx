@@ -48,18 +48,24 @@ export default function CompetePage() {
         try {
             // 1. Update own streak on page load
             if (user) {
-                await supabase.rpc('update_student_streak', { student_uuid: user.id });
+                console.log('🔄 [Compete] Updating streak...');
+                const { error: streakErr } = await supabase.rpc('update_student_streak', { student_uuid: user.id });
+                if (streakErr) console.error('⚠️ [Compete] Streak update error:', streakErr);
 
                 // Fetch User Badges
-                const { data: ubData } = await supabase
+                console.log('🔄 [Compete] Fetching user badges...');
+                const { data: ubData, error: ubErr } = await supabase
                     .from('user_badges')
                     .select('*')
                     .eq('user_id', user.id);
+                if (ubErr) console.error('⚠️ [Compete] Badges fetch error:', ubErr);
                 setUserBadges(ubData || []);
 
                 // Fetch Rank Context
-                const { data: rankData } = await supabase
+                console.log('🔄 [Compete] Fetching rank context...');
+                const { data: rankData, error: rankErr } = await supabase
                     .rpc('get_student_rank_context', { current_student_id: user.id });
+                if (rankErr) console.error('⚠️ [Compete] Rank context error:', rankErr);
                 setRankContext(rankData);
             }
 
@@ -68,10 +74,14 @@ export default function CompetePage() {
             setBadges(bData || []);
 
             // 2. Fetch Leaderboard using new Optimized RPC
+            console.log('🔄 [Compete] Fetching leaderboard...');
             const { data: lbData, error: lbError } = await supabase
                 .rpc('get_leaderboard_v2');
 
-            if (lbError) throw lbError;
+            if (lbError) {
+                console.error('❌ [Compete] Leaderboard RPC failed:', lbError);
+                throw lbError;
+            }
 
             const processedLB = (lbData || []).map((entry: any) => ({
                 id: entry.user_id,
@@ -116,12 +126,11 @@ export default function CompetePage() {
             }
 
         } catch (error: any) {
-            console.error('Error fetching compete data:', {
-                message: error.message,
-                code: error.code,
-                details: error.details,
-                hint: error.hint
-            });
+            console.error('❌ [Compete] Global Fetch Error:', error);
+            // If it's a Supabase error, it might not be an instance of Error
+            if (error && typeof error === 'object') {
+                console.error('Error Details:', JSON.stringify(error, null, 2));
+            }
         } finally {
             setLoading(false);
         }

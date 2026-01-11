@@ -14,6 +14,7 @@ BEGIN
         SELECT 
             u.id,
             u.name,
+            u.equipped_avatar as avatar,
             u.current_streak,
             COALESCE(sub.completed_count, 0) as completed_phases,
             RANK() OVER (

@@ -85,8 +85,12 @@ export default function StudentLayout({
                             <div className="flex items-center space-x-2 md:space-x-4">
                                 <InstallPWA />
                                 <div className="hidden md:flex flex-col items-end mr-2">
-                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{user?.name || user?.email}</span>
-                                    <span className="text-xs text-gray-500 capitalize">{user?.role}</span>
+                                    <span className="text-sm font-bold truncate max-w-[150px]" style={{ color: 'var(--foreground)' }}>
+                                        {user?.name || user?.email || 'Student Account'}
+                                    </span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest opacity-60" style={{ color: 'var(--text-muted)' }}>
+                                        {user?.role}
+                                    </span>
                                 </div>
                                 <div className="bg-gray-100 dark:bg-gray-800 h-9 w-9 rounded-full flex items-center justify-center text-xl shadow-inner border border-gray-200 dark:border-gray-700">
                                     {user?.equipped_avatar || '👤'}
