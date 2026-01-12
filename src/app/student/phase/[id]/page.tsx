@@ -22,7 +22,6 @@ import Link from 'next/link';
 import YouTube from 'react-youtube';
 import { getPhaseStatus } from '@/lib/utils';
 import { isValidGitHubUrl, isValidFileSize, formatFileSize, isValidAssignmentFileType } from '@/utils/validation';
-import ActivityTracker from '@/components/gamification/ActivityTracker';
 
 interface PhasePageProps {
     params: Promise<{ id: string }>;
@@ -87,6 +86,14 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                     .single();
 
                 if (phaseError) throw phaseError;
+
+                // Security check: Don't allow access to upcoming or paused phases
+                const status = getPhaseStatus(phaseData.start_date, phaseData.end_date, phaseData.is_paused);
+                if (status === 'upcoming' || status === 'paused') {
+                    router.push('/student');
+                    return;
+                }
+
                 setPhase(phaseData);
 
                 // Fetch all submissions for this phase
@@ -250,7 +257,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         }, 30000); // 30 second sync
 
         return () => clearInterval(heartbeatInterval);
-    }, [phase, user, id]); // Removed timeSpent and isUnlocked from dependencies!
+    }, [phase, user, id, isVideoStarted, videoCompleted]); // Added isVideoStarted and videoCompleted to catch state changes!
 
     const handleVideoEnd = async () => {
         if (!user || videoCompleted) return;
@@ -569,7 +576,6 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-            <ActivityTracker />
             <div className="flex items-center justify-between">
                 <Link href="/student" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard

@@ -10,7 +10,8 @@ import {
     Clock,
     ChevronRight,
     Trophy,
-    Zap
+    Zap,
+    Lock
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
@@ -60,12 +61,11 @@ export default function StudentDashboard() {
                     // Update streak
                     supabase.rpc('update_student_streak', { student_uuid: user.id }),
 
-                    // Fetch phases
+                    // Fetch phases (ALL active ones, regardless of pause or date)
                     supabase
                         .from('phases')
                         .select('*')
                         .eq('is_active', true)
-                        .eq('is_paused', false)
                         .order('phase_number', { ascending: true }),
 
                     // Fetch student stats
@@ -90,16 +90,10 @@ export default function StudentDashboard() {
 
                 if (phasesResult.error) throw phasesResult.error;
 
-                // Process phases
-                const livePhases = (phasesResult.data || []).filter(phase => {
-                    const status = getPhaseStatus(phase.start_date, phase.end_date, phase.is_paused);
-                    return status === 'live';
-                });
-
-                setPhases(livePhases);
+                setPhases(phasesResult.data || []);
 
                 // Track submission IDs for status badges
-                const submissionIds = new Set((submissionsResult.data || []).map(s => s.phase_id));
+                const submissionIds = new Set((submissionsResult.data || []).map((s: any) => s.phase_id));
                 setSubmissions(submissionIds);
 
                 // Calculate total learning time from all phases
@@ -151,6 +145,8 @@ export default function StudentDashboard() {
         return <DashboardSkeleton />;
     }
 
+    const livePhasesCount = phases.filter((p: Phase) => getPhaseStatus(p.start_date, p.end_date, p.is_paused) === 'live').length;
+
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
             {/* Profile Banner */}
@@ -194,7 +190,7 @@ export default function StudentDashboard() {
                     </div>
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted, #6b7280)' }}>Active</p>
-                        <p className="text-xl font-black" style={{ color: 'var(--foreground)' }}>{phases.length}</p>
+                        <p className="text-xl font-black" style={{ color: 'var(--foreground)' }}>{livePhasesCount}</p>
                     </div>
                 </div>
                 <div className="p-5 rounded-2xl shadow-sm border transition-all flex flex-col items-center justify-center text-center space-y-2 group hover:shadow-md hover:-translate-y-1" style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}>
@@ -238,47 +234,79 @@ export default function StudentDashboard() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-6">
-                        {phases.map((phase) => (
-                            <Link
-                                key={phase.id}
-                                href={`/student/phase/${phase.id}`}
-                                className="group p-5 rounded-2xl shadow-sm border transition-all flex flex-col md:flex-row md:items-center justify-between hover:shadow-xl hover:border-blue-500/30 active:scale-[0.98]"
-                                style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}
-                            >
-                                <div className="flex items-center space-x-5">
-                                    <div
-                                        className="h-14 w-14 rounded-2xl flex items-center justify-center font-black shrink-0 transition-all border shadow-sm group-hover:rotate-3"
-                                        style={{ backgroundColor: 'var(--theme-primary, #2563eb)11', color: 'var(--theme-primary, #2563eb)', borderColor: 'var(--theme-primary, #2563eb)33' }}
-                                    >
-                                        P{phase.phase_number}
+                        {phases.map((phase: Phase) => {
+                            const status = getPhaseStatus(phase.start_date, phase.end_date, phase.is_paused);
+                            const isLive = status === 'live';
+                            const isPaused = status === 'paused';
+                            const isUpcoming = status === 'upcoming';
+                            const isEnded = status === 'ended';
+                            const isLocked = isPaused || isUpcoming;
+
+                            const content = (
+                                <div
+                                    className={`group p-5 rounded-2xl shadow-sm border transition-all flex flex-col md:flex-row md:items-center justify-between ${isLocked ? 'opacity-75 cursor-not-allowed bg-gray-50/50 grayscale-[0.5]' : 'hover:shadow-xl hover:border-blue-500/30 active:scale-[0.98]'
+                                        }`}
+                                    style={{ backgroundColor: 'var(--card-bg, #ffffff)', borderColor: 'var(--card-border, #f3f4f6)' }}
+                                >
+                                    <div className="flex items-center space-x-5">
+                                        <div
+                                            className={`h-14 w-14 rounded-2xl flex items-center justify-center font-black shrink-0 transition-all border shadow-sm ${!isLocked && 'group-hover:rotate-3'}`}
+                                            style={{
+                                                backgroundColor: isLocked ? 'var(--card-border, #f3f4f6)' : 'var(--theme-primary, #2563eb)11',
+                                                color: isLocked ? '#9ca3af' : 'var(--theme-primary, #2563eb)',
+                                                borderColor: isLocked ? '#e5e7eb' : 'var(--theme-primary, #2563eb)33'
+                                            }}
+                                        >
+                                            {isLocked ? <Lock className="h-6 w-6" /> : `P${phase.phase_number}`}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h3 className={`text-xl font-bold transition-colors ${!isLocked && 'group-hover:text-blue-600'}`} style={{ color: isLocked ? '#6b7280' : 'var(--foreground)' }}>
+                                                    {phase.title}
+                                                </h3>
+                                                {!phase.is_mandatory && (
+                                                    <span className="px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-gray-400 rounded-full uppercase tracking-widest border border-gray-200">
+                                                        Optional
+                                                    </span>
+                                                )}
+                                                {isPaused && (
+                                                    <span className="px-2 py-0.5 text-[10px] font-bold bg-yellow-100 text-yellow-600 rounded-full uppercase tracking-widest border border-yellow-200">
+                                                        Paused
+                                                    </span>
+                                                )}
+                                                {isUpcoming && (
+                                                    <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-600 rounded-full uppercase tracking-widest border border-blue-200">
+                                                        Upcoming • {new Date(phase.start_date).toLocaleDateString()}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm line-clamp-1 max-w-xl mt-0.5" style={{ color: 'var(--text-muted, #6b7280)' }}>
+                                                {isUpcoming ? `Phase starts on ${new Date(phase.start_date).toLocaleDateString()}` : phase.description}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold group-hover:text-blue-600 transition-colors flex items-center" style={{ color: 'var(--foreground)' }}>
-                                            {phase.title}
-                                            {!phase.is_mandatory && (
-                                                <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-gray-400 rounded-full uppercase tracking-widest border border-gray-200">
-                                                    Optional
-                                                </span>
-                                            )}
-                                        </h3>
-                                        <p className="text-sm line-clamp-1 max-w-xl mt-0.5" style={{ color: 'var(--text-muted, #6b7280)' }}>
-                                            {phase.description}
-                                        </p>
+                                    <div className="mt-5 md:mt-0 flex items-center justify-between md:justify-end space-x-8 border-t md:border-t-0 pt-4 md:pt-0">
+                                        <div className="flex flex-col items-start md:items-end">
+                                            <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted, #9ca3af)' }}>Status</span>
+                                            <span className={`text-sm font-black ${isLocked ? 'text-gray-400' : submissions.has(phase.id) ? 'text-green-500' : 'text-orange-400'}`}>
+                                                {isPaused ? 'Paused' : isUpcoming ? 'Locked' : submissions.has(phase.id) ? 'Completed' : 'Continue'}
+                                            </span>
+                                        </div>
+                                        <div className={`h-10 w-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center transition-all shadow-inner ${!isLocked && 'group-hover:bg-blue-600 group-hover:text-white'}`}>
+                                            {isLocked ? <Lock className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-5 w-5" />}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="mt-5 md:mt-0 flex items-center justify-between md:justify-end space-x-8 border-t md:border-t-0 pt-4 md:pt-0">
-                                    <div className="flex flex-col items-start md:items-end">
-                                        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted, #9ca3af)' }}>Status</span>
-                                        <span className={`text-sm font-black ${submissions.has(phase.id) ? 'text-green-500' : 'text-orange-400'}`}>
-                                            {submissions.has(phase.id) ? 'Completed' : 'Continue'}
-                                        </span>
-                                    </div>
-                                    <div className="h-10 w-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
-                                        <ChevronRight className="h-5 w-5" />
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
+                            );
+
+                            return isLocked ? (
+                                <div key={phase.id}>{content}</div>
+                            ) : (
+                                <Link key={phase.id} href={`/student/phase/${phase.id}`}>
+                                    {content}
+                                </Link>
+                            );
+                        })}
                     </div>
                 )}
             </div>
