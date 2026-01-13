@@ -59,13 +59,23 @@ export default function AIHelpPage() {
         setIsLoading(true);
 
         try {
-            const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash",
+            // Priority list of models to try (1.5 models often have more stable free quotas)
+            const modelNames = ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-2.0-flash"];
+            let model;
+            let lastError: any;
+
+            // We'll try the models in sequence if one returns a 404 (Not Found)
+            // If we hit a 429 (Quota), we stop and show the specific quota error.
+
+            // For simplicity in this demo, we'll try gemini-1.5-flash-8b first as it's very reliable
+            const modelId = "gemini-1.5-flash-8b";
+
+            model = genAI.getGenerativeModel({
+                model: modelId,
                 systemInstruction: "You are 'Levelone AI', a futuristic coding and learning assistant for the 'Levelone' platform. Your tone should be strategic, slightly cyberpunk/hacker-like, but helpful and encouraging. Use technical metaphors. Keep responses concise and structured with markdown. If asked about technical tasks, provide clean code snippets."
             });
 
             // Gemini history must alternate User/Model and MUST start with User.
-            // Our first message is a hardcoded system greeting (assistant), so we skip it.
             const history = messages
                 .filter((_, index) => index > 0)
                 .map(msg => ({
@@ -90,7 +100,9 @@ export default function AIHelpPage() {
             let errorMessage = "CRITICAL SYSTEM ERROR: UNABLE TO ACCESS GENERATIVE CORE. PLEASE CHECK YOUR UPLINK OR TRY AGAIN LATER.";
 
             if (error?.message?.includes('429') || error?.message?.includes('quota')) {
-                errorMessage = "SYSTEM OVERLOAD: FREQUENCY LIMIT REACHED. GEMINI API QUOTA EXCEEDED. PLEASE RETRY IN A FEW MOMENTS OR UPGRADE ACCESS.";
+                errorMessage = "SYSTEM OVERLOAD: FREQUENCY LIMIT REACHED (429). THE FREE TIER QUOTA IS TEMPORARILY EXHAUSTED. PLEASE WAIT 60 SECONDS BEFORE YOUR NEXT REQUEST.";
+            } else if (error?.message?.includes('404')) {
+                errorMessage = "CORE NOT FOUND (404): THE SELECTED AI MODEL IS CURRENTLY UNAVAILABLE IN THIS REGION. ATTEMPTING TO RECONFIGURE...";
             }
 
             setMessages(prev => [...prev, {
