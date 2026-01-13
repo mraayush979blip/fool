@@ -195,6 +195,30 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         timeSpentRef.current = timeSpent;
     }, [timeSpent]);
 
+    // 3. Dynamic Unlock Check (Runs every second as timer ticks)
+    useEffect(() => {
+        if (!phase) return;
+
+        const req = phase.min_seconds_required || 0;
+        let shouldUnlock = false;
+
+        if (req > 0) {
+            // Admin set a time limit -> Unlock if time spent >= limit
+            shouldUnlock = timeSpent >= req;
+        } else {
+            // No time limit -> Unlock if video completed
+            shouldUnlock = videoCompleted;
+        }
+
+        setIsUnlocked(prev => {
+            if (prev !== shouldUnlock) {
+                console.log(shouldUnlock ? '🔓 Phase Unlocked!' : '🔒 Phase Locked');
+                return shouldUnlock;
+            }
+            return prev;
+        });
+    }, [timeSpent, phase, videoCompleted]);
+
     // 2. Heartbeat logic (Sync with DB every 30 seconds)
     useEffect(() => {
         if (!phase || !user) return;
