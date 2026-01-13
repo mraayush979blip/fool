@@ -20,6 +20,8 @@ export const metadata: Metadata = {
   description: "Phase-Based Learning Management System - sab ka sath sab vikas",
 };
 
+import NotificationListener from "@/components/NotificationListener";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -41,6 +43,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <VersionCheck />
+          <NotificationListener />
           {children}
           <Toaster richColors position="top-center" />
         </AuthProvider>

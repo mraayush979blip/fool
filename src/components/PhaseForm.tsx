@@ -187,8 +187,18 @@ export default function PhaseForm({ id }: PhaseFormProps) {
             } else {
                 const { error } = await supabase
                     .from('phases')
-                    .insert([dataToSave]);
+                    .insert([dataToSave])
+                    .select();
+
                 if (error) throw error;
+
+                // Create notification for new phase
+                await supabase.from('notifications').insert({
+                    title: 'New Phase Available',
+                    message: `Phase ${dataToSave.phase_number}: ${dataToSave.title} has been uploaded. Check it out!`,
+                    type: 'new_phase',
+                    reference_id: null // or we could get the ID if we selected it
+                });
             }
             router.push('/admin/phases');
         } catch (error: any) {
