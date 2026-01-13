@@ -56,6 +56,8 @@ BEGIN
     END LOOP;
 
     -- Refresh global users.points based on the sum of points_earned
+    -- WARNING: Commented out to prevent overwriting points spent on rewards
+    /*
     UPDATE users u
     SET points = (
         SELECT COALESCE(SUM(points_earned), 0)
@@ -63,4 +65,5 @@ BEGIN
         WHERE student_id = u.id
     )
     WHERE role = 'student';
+    */
 END $$;

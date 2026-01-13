@@ -610,6 +610,9 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                             Optional
                                         </span>
                                     )}
+                                    <span className="ml-3 px-2.5 py-1 text-xs font-bold bg-orange-100 text-orange-700 rounded-lg uppercase tracking-wider border border-orange-200">
+                                        Deadline: {new Date(phase.end_date).toLocaleDateString()}
+                                    </span>
                                 </h1>
                             </div>
                             <p className="text-gray-600 leading-relaxed">{phase.description}</p>

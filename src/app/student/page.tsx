@@ -276,7 +276,12 @@ export default function StudentDashboard() {
                                                 )}
                                                 {isUpcoming && (
                                                     <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-600 rounded-full uppercase tracking-widest border border-blue-200">
-                                                        Upcoming • {new Date(phase.start_date).toLocaleDateString()}
+                                                        Starts • {new Date(phase.start_date).toLocaleDateString()}
+                                                    </span>
+                                                )}
+                                                {isLive && (
+                                                    <span className="px-2 py-0.5 text-[10px] font-bold bg-orange-100 text-orange-600 rounded-full uppercase tracking-widest border border-orange-200">
+                                                        Deadline • {new Date(phase.end_date).toLocaleDateString()}
                                                     </span>
                                                 )}
                                             </div>
