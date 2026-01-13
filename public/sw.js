@@ -13,7 +13,18 @@ self.addEventListener('install', (event) => {
 
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS_TO_CACHE);
+            // Try to cache all assets, but don't fail if some are missing
+            return cache.addAll(ASSETS_TO_CACHE).catch((error) => {
+                console.warn('[Service Worker] Failed to cache some assets:', error);
+                // Cache assets individually to avoid failing on missing files
+                return Promise.all(
+                    ASSETS_TO_CACHE.map(url =>
+                        cache.add(url).catch(err => {
+                            console.warn('[Service Worker] Failed to cache:', url, err);
+                        })
+                    )
+                );
+            });
         })
     );
 });
