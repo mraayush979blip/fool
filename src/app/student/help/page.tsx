@@ -81,7 +81,7 @@ export default function AIHelpPage() {
         } catch (error: any) {
             console.error('AI Error:', error);
 
-            let errorMessage = "CRITICAL SYSTEM ERROR: UNABLE TO ACCESS GENERATIVE CORE. PLEASE CHECK YOUR UPLINK OR TRY AGAIN LATER.";
+            let errorMessage = `CRITICAL SYSTEM ERROR: ${error?.message?.toUpperCase() || "UNABLE TO ACCESS GENERATIVE CORE"}. PLEASE CHECK YOUR UPLINK OR TRY AGAIN LATER.`;
 
             if (error?.message?.includes('429')) {
                 errorMessage = "SYSTEM OVERLOAD: GROQ RATE LIMIT REACHED (429). PLEASE WAIT A MOMENT BEFORE YOUR NEXT COMMAND.";
