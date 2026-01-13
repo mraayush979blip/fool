@@ -435,6 +435,25 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                     </div>
 
                     <div className="sm:col-span-6">
+                        <div className="flex items-start">
+                            <div className="flex items-center h-5">
+                                <input
+                                    id="bypass_time_requirement"
+                                    name="bypass_time_requirement"
+                                    type="checkbox"
+                                    className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                                    checked={formData.bypass_time_requirement || false}
+                                    onChange={(e) => setFormData({ ...formData, bypass_time_requirement: e.target.checked })}
+                                />
+                            </div>
+                            <div className="ml-3 text-sm">
+                                <label htmlFor="bypass_time_requirement" className="font-medium text-gray-700">Allow Immediate Submission (Bypass Time Requirement)</label>
+                                <p className="text-gray-500">If checked, students can submit assignments immediately without waiting for the minimum time or watching the video.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="sm:col-span-6">
                         <label htmlFor="total_assignments" className="block text-sm font-bold text-gray-700">
                             Total Assignments Required
                         </label>

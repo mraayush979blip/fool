@@ -151,7 +151,9 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 const req = phaseData.min_seconds_required || 0;
                 let shouldBeUnlocked = false;
 
-                if (req > 0) {
+                if (phaseData.bypass_time_requirement) {
+                    shouldBeUnlocked = true;
+                } else if (req > 0) {
                     shouldBeUnlocked = spent >= req;
                 } else {
                     // If no time requirement set by admin, fallback to requiring video completion
@@ -202,7 +204,9 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         const req = phase.min_seconds_required || 0;
         let shouldUnlock = false;
 
-        if (req > 0) {
+        if (phase.bypass_time_requirement) {
+            shouldUnlock = true;
+        } else if (req > 0) {
             // Admin set a time limit -> Unlock if time spent >= limit
             shouldUnlock = timeSpent >= req;
         } else {
