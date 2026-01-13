@@ -2,7 +2,7 @@
 
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User as UserIcon, BookOpen, Trophy, ShoppingBag } from 'lucide-react';
+import { LogOut, User as UserIcon, BookOpen, Trophy, ShoppingBag, Terminal } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import InstallPWA from '@/components/InstallPWA';
@@ -79,6 +79,16 @@ export default function StudentLayout({
                                         <ShoppingBag className="h-4 w-4 mr-1.5" />
                                         Rewards
                                     </Link>
+                                    <Link
+                                        href="/student/help"
+                                        className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors flex items-center ${pathname === '/student/help'
+                                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'
+                                            }`}
+                                    >
+                                        <Terminal className="h-4 w-4 mr-1.5" />
+                                        Help AI
+                                    </Link>
                                 </div>
                             </div>
 
@@ -121,7 +131,7 @@ export default function StudentLayout({
 
                 {/* Mobile Bottom Navigation */}
                 <div className="md:hidden fixed bottom-4 left-4 right-4 h-16 z-50 glass rounded-2xl border shadow-2xl border-[var(--card-border)] overflow-hidden">
-                    <div className="grid grid-cols-3 h-full">
+                    <div className="grid grid-cols-4 h-full">
                         <MobileNavLink
                             href="/student"
                             icon={BookOpen}
@@ -139,6 +149,12 @@ export default function StudentLayout({
                             icon={ShoppingBag}
                             label="Store"
                             isActive={pathname === '/student/store'}
+                        />
+                        <MobileNavLink
+                            href="/student/help"
+                            icon={Terminal}
+                            label="Help AI"
+                            isActive={pathname === '/student/help'}
                         />
                     </div>
                 </div>

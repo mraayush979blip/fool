@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 import {
     Terminal,
     Send,
@@ -16,8 +16,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-// Initialize Gemini (Testing API Key provided by user)
-const genAI = new GoogleGenerativeAI('AIzaSyA_4eNSpeH_fesYsIjXzWQoZFtFaOJg8Bc');
+// Initialize Groq (Testing API Key stored in .env.local)
+const groq = new Groq({
+    apiKey: process.env.NEXT_PUBLIC_GROQ_API_KEY,
+    dangerouslyAllowBrowser: true // Required for client-side demo
+});
 
 interface Message {
     role: 'user' | 'assistant';
@@ -29,7 +32,7 @@ export default function AIHelpPage() {
     const [messages, setMessages] = useState<Message[]>([
         {
             role: 'assistant',
-            content: "SYSTEM INITIALIZED... WELCOME TO LEVELONE CORE COMMAND. I AM YOUR STRATEGIC AI ASSISTANT. HOW CAN I OPTIMIZE YOUR LEARNING JOURNEY TODAY?",
+            content: "SYSTEM INITIALIZED... WELCOME TO LEVELONE CORE COMMAND (POWERED BY GROQ LPU). I AM YOUR STRATEGIC AI ASSISTANT. HOW CAN I OPTIMIZE YOUR LEARNING JOURNEY TODAY?",
             timestamp: new Date()
         }
     ]);
@@ -59,35 +62,29 @@ export default function AIHelpPage() {
         setIsLoading(true);
 
         try {
-            // Priority list of models to try (1.5 models often have more stable free quotas)
-            const modelNames = ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-2.0-flash"];
-            let model;
-            let lastError: any;
-
-            // We'll try the models in sequence if one returns a 404 (Not Found)
-            // If we hit a 429 (Quota), we stop and show the specific quota error.
-
-            // For simplicity in this demo, we'll try gemini-1.5-flash-8b first as it's very reliable
-            const modelId = "gemini-1.5-flash-8b";
-
-            model = genAI.getGenerativeModel({
-                model: modelId,
-                systemInstruction: "You are 'Levelone AI', a futuristic coding and learning assistant for the 'Levelone' platform. Your tone should be strategic, slightly cyberpunk/hacker-like, but helpful and encouraging. Use technical metaphors. Keep responses concise and structured with markdown. If asked about technical tasks, provide clean code snippets."
-            });
-
-            // Gemini history must alternate User/Model and MUST start with User.
             const history = messages
-                .filter((_, index) => index > 0)
+                .filter((_, index) => index > 0) // Skip initial greeting for history sync if needed, but Groq doesn't care
                 .map(msg => ({
-                    role: msg.role === 'user' ? 'user' : 'model',
-                    parts: [{ text: msg.content }]
+                    role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
+                    content: msg.content
                 }));
 
-            const chat = model.startChat({ history });
+            const completion = await groq.chat.completions.create({
+                messages: [
+                    {
+                        role: "system",
+                        content: "You are 'Levelone AI', a futuristic coding and learning assistant for the 'Levelone' platform. Your tone should be strategic, slightly cyberpunk/hacker-like, but helpful and encouraging. Use technical metaphors. Keep responses concise and structured with markdown. If asked about technical tasks, provide clean code snippets."
+                    },
+                    ...history,
+                    {
+                        role: "user",
+                        content: userMessage.content
+                    }
+                ],
+                model: "llama-3.3-70b-versatile",
+            });
 
-            const result = await chat.sendMessage(userMessage.content);
-            const response = await result.response;
-            const text = response.text();
+            const text = completion.choices[0]?.message?.content || "";
 
             setMessages(prev => [...prev, {
                 role: 'assistant',
@@ -99,10 +96,8 @@ export default function AIHelpPage() {
 
             let errorMessage = "CRITICAL SYSTEM ERROR: UNABLE TO ACCESS GENERATIVE CORE. PLEASE CHECK YOUR UPLINK OR TRY AGAIN LATER.";
 
-            if (error?.message?.includes('429') || error?.message?.includes('quota')) {
-                errorMessage = "SYSTEM OVERLOAD: FREQUENCY LIMIT REACHED (429). THE FREE TIER QUOTA IS TEMPORARILY EXHAUSTED. PLEASE WAIT 60 SECONDS BEFORE YOUR NEXT REQUEST.";
-            } else if (error?.message?.includes('404')) {
-                errorMessage = "CORE NOT FOUND (404): THE SELECTED AI MODEL IS CURRENTLY UNAVAILABLE IN THIS REGION. ATTEMPTING TO RECONFIGURE...";
+            if (error?.message?.includes('429')) {
+                errorMessage = "SYSTEM OVERLOAD: GROQ RATE LIMIT REACHED (429). PLEASE WAIT A MOMENT BEFORE YOUR NEXT COMMAND.";
             }
 
             setMessages(prev => [...prev, {
