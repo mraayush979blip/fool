@@ -108,7 +108,7 @@ export default function AIHelpPage() {
     };
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-black text-[#00ff41] font-mono selection:bg-[#00ff41] selection:text-black relative overflow-hidden flex flex-col">
+        <div className="h-screen bg-black text-[#00ff41] font-mono selection:bg-[#00ff41] selection:text-black relative overflow-hidden flex flex-col">
             {/* Scanline Overlay */}
             <div className="absolute inset-0 pointer-events-none z-10 opacity-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] shadow-[inset_0_0_100px_rgba(0,0,0,0.5)]"></div>
 
@@ -116,27 +116,33 @@ export default function AIHelpPage() {
             <div className="absolute inset-0 pointer-events-none z-10 opacity-[0.015] bg-white"></div>
 
             {/* Header */}
-            <div className="border-b border-[#003b11] p-4 flex items-center justify-between bg-black/80 backdrop-blur-md relative z-20">
-                <div className="flex items-center gap-3">
-                    <Link href="/student" className="hover:text-white transition-colors">
-                        <ArrowLeft className="h-5 w-5" />
+            <div className="border-b border-[#003b11] p-4 flex items-center justify-between bg-black/80 backdrop-blur-xl relative z-20">
+                <div className="flex items-center gap-4">
+                    <Link
+                        href="/student"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#003b11]/30 border border-[#00ff41]/30 hover:bg-[#00ff41]/10 hover:border-[#00ff41] transition-all text-[#00ff41] group"
+                    >
+                        <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Back to Command Center</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest sm:hidden">Back</span>
                     </Link>
+                    <div className="h-4 w-[1px] bg-[#003b11] hidden sm:block"></div>
                     <div className="flex items-center gap-2">
-                        <Terminal className="h-5 w-5" />
-                        <span className="font-black text-lg tracking-widest uppercase">Levelone.core.ai</span>
+                        <Terminal className="h-4 w-4 opacity-70" />
+                        <span className="font-black text-sm tracking-widest uppercase opacity-90">Levelone.core.ai</span>
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="hidden sm:flex items-center gap-2 text-[10px] opacity-70 text-[#00ff41]">
-                        <span className="h-2 w-2 rounded-full bg-[#00ff41]"></span>
-                        SYSTEM ONLINE
+                        <span className="h-2 w-2 rounded-full bg-[#00ff41] shadow-[0_0_8px_#00ff41]"></span>
+                        CORE ONLINE
                     </div>
                     <button
                         onClick={clearChat}
-                        className="p-2 hover:bg-[#003b11]/50 rounded-lg text-[#00ff41] transition-all hover:text-white"
+                        className="p-2 hover:bg-[#003b11]/50 rounded-lg text-[#00ff41]/60 transition-all hover:text-white"
                         title="Clear Buffer"
                     >
-                        <Trash2 className="h-5 w-5" />
+                        <Trash2 className="h-4 w-4" />
                     </button>
                 </div>
             </div>
