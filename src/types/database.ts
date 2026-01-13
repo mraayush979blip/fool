@@ -50,6 +50,7 @@ export interface Phase {
   paused_at?: string;
   min_seconds_required: number;
   total_assignments: number;
+  bypass_time_requirement?: boolean;
   created_at: string;
   updated_at: string;
 }
