@@ -151,6 +151,13 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 const req = phaseData.min_seconds_required || 0;
                 let shouldBeUnlocked = false;
 
+                console.log('Phase Unlock Debug:', {
+                    bypass: phaseData.bypass_time_requirement,
+                    timeSpent: spent,
+                    req: req,
+                    video: activityData?.video_completed
+                });
+
                 if (phaseData.bypass_time_requirement) {
                     shouldBeUnlocked = true;
                 } else if (req > 0) {
