@@ -1,4 +1,4 @@
-const CACHE_NAME = 'levelone-cache-v2'; // Changed version to force update
+const CACHE_NAME = 'levelone-cache-v3'; // Bumped version to v3
 const ASSETS_TO_CACHE = [
     '/',
     '/manifest.webmanifest',
@@ -8,21 +8,13 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
-    // Force the waiting service worker to become the active service worker
     self.skipWaiting();
-
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            // Try to cache all assets, but don't fail if some are missing
-            return cache.addAll(ASSETS_TO_CACHE).catch((error) => {
-                console.warn('[Service Worker] Failed to cache some assets:', error);
-                // Cache assets individually to avoid failing on missing files
+            return cache.addAll(ASSETS_TO_CACHE).catch((err) => {
+                console.warn('[SW] Cache addAll failed, attempting individual:', err);
                 return Promise.all(
-                    ASSETS_TO_CACHE.map(url =>
-                        cache.add(url).catch(err => {
-                            console.warn('[Service Worker] Failed to cache:', url, err);
-                        })
-                    )
+                    ASSETS_TO_CACHE.map(url => cache.add(url).catch(e => console.warn(`[SW] Failed ${url}:`, e)))
                 );
             });
         })
@@ -30,16 +22,14 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    // Take control of all pages immediately
     event.waitUntil(
         clients.claim().then(() => {
-            // Clean up old caches
-            return caches.keys().then((cacheNames) => {
+            return caches.keys().then((keys) => {
                 return Promise.all(
-                    cacheNames.map((cacheName) => {
-                        if (cacheName !== CACHE_NAME) {
-                            console.log('Deleting old cache:', cacheName);
-                            return caches.delete(cacheName);
+                    keys.map((key) => {
+                        if (key !== CACHE_NAME) {
+                            console.log('[SW] Clearing old cache:', key);
+                            return caches.delete(key);
                         }
                     })
                 );
@@ -49,15 +39,39 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Only intercept GET requests to avoid breaking Server Actions (POST)
-    if (event.request.method !== 'GET') {
-        event.respondWith(fetch(event.request));
+    // 1. For HTML Navigation (Pages): Network First, then Cache (Fallback)
+    // This ensures users always get the latest deployment if online.
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    // Update cache with new version
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+                    return response;
+                })
+                .catch(() => {
+                    // Offline? Serve cached version
+                    return caches.match(event.request);
+                })
+        );
         return;
     }
 
-    event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request);
-        })
-    );
+    // 2. For GET requests (Assets, CSS, Images): Cache First, then Network
+    if (event.request.method === 'GET') {
+        event.respondWith(
+            caches.match(event.request).then((cached) => {
+                return cached || fetch(event.request).then(response => {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+                    return response;
+                });
+            })
+        );
+        return;
+    }
+
+    // 3. For POST/PUT/DELETE: Network Only (Do not intercept)
+    event.respondWith(fetch(event.request));
 });
