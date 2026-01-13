@@ -1,8 +1,5 @@
 'use client';
 
-// Force dynamic rendering to ensure Server Actions work correctly
-export const dynamic = 'force-dynamic';
-
 import { useState, useRef, useEffect } from 'react';
 import { getAIResponse } from '@/app/actions/ai';
 import {
