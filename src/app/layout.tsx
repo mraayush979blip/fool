@@ -56,6 +56,41 @@ export default function RootLayout({
                   });
                 });
               }
+
+              // CRITICAL FALLBACK: Auto-reload on Chunk Load Errors (404)
+              window.addEventListener('error', function(e) {
+                var isChunkError = e.message && (
+                  e.message.includes('Loading chunk') || 
+                  e.message.includes('Loading CSS chunk') ||
+                  e.message.includes('missing')
+                );
+                var isScriptError = e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK');
+                
+                if (isChunkError || isScriptError) {
+                  // Check if it's a 404/network error for a critical asset
+                  var targetSrc = e.target ? (e.target.src || e.target.href) : '';
+                  var isAppChunk = targetSrc && (targetSrc.includes('_next') || targetSrc.includes('main'));
+                  
+                  if (e.message || isAppChunk) {
+                    console.error('🚨 Critical Chunk Load Error detected:', e.target);
+                    // Prevent infinite reload loops (limit to 1 reload per 10 seconds)
+                    var lastReload = sessionStorage.getItem('chunk_reload_ts');
+                    var now = Date.now();
+                    
+                    if (!lastReload || (now - parseInt(lastReload) > 10000)) {
+                      console.log('🔄 Force reloading to fetch fresh chunks...');
+                      sessionStorage.setItem('chunk_reload_ts', now.toString());
+                      // Clear cache and reload
+                      if ('caches' in window) {
+                         caches.keys().then(function(names) {
+                            for (var name of names) caches.delete(name);
+                         });
+                      }
+                      window.location.reload(true);
+                    }
+                  }
+                }
+              }, true); // Capture phase is essential to catch resource loading errors
             `,
           }}
         />
