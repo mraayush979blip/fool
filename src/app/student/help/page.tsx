@@ -125,8 +125,8 @@ export default function AIHelpPage() {
             {/* Scanline Overlay */}
             <div className="absolute inset-0 pointer-events-none z-10 opacity-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] shadow-[inset_0_0_100px_rgba(0,0,0,0.5)]"></div>
 
-            {/* CRT Flicker Effect */}
-            <div className="absolute inset-0 pointer-events-none z-10 animate-pulse opacity-[0.03] bg-white"></div>
+            {/* CRT Flicker Effect (Stabilized) */}
+            <div className="absolute inset-0 pointer-events-none z-10 opacity-[0.015] bg-white"></div>
 
             {/* Header */}
             <div className="border-b border-[#003b11] p-4 flex items-center justify-between bg-black/80 backdrop-blur-md relative z-20">
@@ -135,13 +135,13 @@ export default function AIHelpPage() {
                         <ArrowLeft className="h-5 w-5" />
                     </Link>
                     <div className="flex items-center gap-2">
-                        <Terminal className="h-5 w-5 animate-pulse" />
+                        <Terminal className="h-5 w-5" />
                         <span className="font-black text-lg tracking-widest uppercase">Levelone.core.ai</span>
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <div className="hidden sm:flex items-center gap-2 text-[10px] opacity-70">
-                        <span className="h-2 w-2 rounded-full bg-[#00ff41] animate-ping"></span>
+                    <div className="hidden sm:flex items-center gap-2 text-[10px] opacity-70 text-[#00ff41]">
+                        <span className="h-2 w-2 rounded-full bg-[#00ff41]"></span>
                         SYSTEM ONLINE
                     </div>
                     <button
