@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Groq from 'groq-sdk';
+import { getAIResponse } from '@/app/actions/ai';
 import {
     Terminal,
     Send,
@@ -15,12 +15,6 @@ import {
     Monitor
 } from 'lucide-react';
 import Link from 'next/link';
-
-// Initialize Groq (Testing API Key stored in .env.local)
-const groq = new Groq({
-    apiKey: process.env.NEXT_PUBLIC_GROQ_API_KEY,
-    dangerouslyAllowBrowser: true // Required for client-side demo
-});
 
 interface Message {
     role: 'user' | 'assistant';
@@ -57,40 +51,33 @@ export default function AIHelpPage() {
             timestamp: new Date()
         };
 
-        setMessages(prev => [...prev, userMessage]);
+        const currentMessages = [...messages, userMessage];
+        setMessages(currentMessages);
         setInput('');
         setIsLoading(true);
 
         try {
-            const history = messages
-                .filter((_, index) => index > 0) // Skip initial greeting for history sync if needed, but Groq doesn't care
+            // Prepare history for server action (skip the initial greeting if we want a clean start,
+            // but usually we include it for context if it's relevant.
+            // Here the initial greeting is static, so we can skip the first index.)
+            const history = currentMessages
+                .filter((_, index) => index > 0)
                 .map(msg => ({
-                    role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
+                    role: msg.role,
                     content: msg.content
                 }));
 
-            const completion = await groq.chat.completions.create({
-                messages: [
-                    {
-                        role: "system",
-                        content: "You are 'Levelone AI', a futuristic coding and learning assistant for the 'Levelone' platform. Your tone should be strategic, slightly cyberpunk/hacker-like, but helpful and encouraging. Use technical metaphors. Keep responses concise and structured with markdown. If asked about technical tasks, provide clean code snippets."
-                    },
-                    ...history,
-                    {
-                        role: "user",
-                        content: userMessage.content
-                    }
-                ],
-                model: "llama-3.3-70b-versatile",
-            });
+            const result = await getAIResponse(history);
 
-            const text = completion.choices[0]?.message?.content || "";
-
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: text,
-                timestamp: new Date()
-            }]);
+            if (result.success) {
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: result.text || "",
+                    timestamp: new Date()
+                }]);
+            } else {
+                throw new Error(result.error);
+            }
         } catch (error: any) {
             console.error('AI Error:', error);
 
