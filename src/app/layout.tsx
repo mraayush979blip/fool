@@ -50,7 +50,25 @@ export default function RootLayout({
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    console.log('ServiceWorker registration successful');
+                    
+                    // FORCE UPDATE check
+                    registration.update();
+                    
+                    registration.onupdatefound = () => {
+                        const installingWorker = registration.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    console.log('New content available; please refresh.'); 
+                                    // FORCE RELOAD Only if strictly needed, otherwise let user refresh
+                                    // window.location.reload(); 
+                                } else {
+                                    console.log('Content is cached for offline use.');
+                                }
+                            }
+                        };
+                    };
                   }, function(err) {
                     console.log('ServiceWorker registration failed: ', err);
                   });
