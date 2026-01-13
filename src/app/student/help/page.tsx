@@ -221,7 +221,7 @@ export default function AIHelpPage() {
                 <div className="max-w-4xl mx-auto mt-2 flex justify-between items-center text-[8px] opacity-40 font-bold uppercase tracking-[0.2em]">
                     <span>Secure Uplink: AES-256</span>
                     <span className="flex items-center gap-1">
-                        <Command className="h-2 w-2" /> Powered by Gemini Flash 2.0
+                        <Command className="h-2 w-2" /> made by aayush sharma
                     </span>
                     <span>Lat: 0.00ms</span>
                 </div>
