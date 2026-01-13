@@ -420,17 +420,18 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 name="min_seconds_required"
                                 id="min_seconds_required"
                                 min="0"
-                                placeholder="e.g. 30"
+                                step="0.1"
+                                placeholder="e.g. 0.5 for 30 seconds"
                                 className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
-                                value={isNaN(formData.min_seconds_required as number) ? '' : (formData.min_seconds_required ? Math.floor(formData.min_seconds_required / 60) : 0)}
+                                value={isNaN(formData.min_seconds_required as number) ? '' : (formData.min_seconds_required ? formData.min_seconds_required / 60 : 0)}
                                 onChange={(e) => {
-                                    const val = e.target.value === '' ? NaN : parseInt(e.target.value) * 60;
+                                    const val = e.target.value === '' ? NaN : parseFloat(e.target.value) * 60;
                                     setFormData({ ...formData, min_seconds_required: val });
                                 }}
                             />
                             <span className="ml-3 text-sm text-gray-500">minutes</span>
                         </div>
-                        <p className="mt-1 text-xs text-gray-400 italic">Students must spend at least this much time on the phase page before they can submit.</p>
+                        <p className="mt-1 text-xs text-gray-400 italic">Students must spend at least this much time on the phase page before they can submit (0 = Requires Video Completion).</p>
                     </div>
 
                     <div className="sm:col-span-6">
