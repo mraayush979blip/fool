@@ -25,7 +25,7 @@ export default function AIHelpPage() {
     const [messages, setMessages] = useState<Message[]>([
         {
             role: 'assistant',
-            content: "SYSTEM INITIALIZED... WELCOME TO LEVELONE CORE COMMAND (POWERED BY GROQ LPU). I AM YOUR STRATEGIC AI ASSISTANT. HOW CAN I OPTIMIZE YOUR LEARNING JOURNEY TODAY?",
+            content: "SYSTEM INITIALIZED... WELCOME TO LEVELONE CORE COMMAND (MADE BY AAYUSH SHARMA). I AM YOUR STRATEGIC AI ASSISTANT. HOW CAN I OPTIMIZE YOUR LEARNING JOURNEY TODAY?",
             timestamp: new Date()
         }
     ]);
