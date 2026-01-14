@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { getAIResponse } from '@/app/actions/ai';
 import {
     Terminal,
     Send,
@@ -57,9 +56,7 @@ export default function AIHelpPage() {
         setIsLoading(true);
 
         try {
-            // Prepare history for server action (skip the initial greeting if we want a clean start,
-            // but usually we include it for context if it's relevant.
-            // Here the initial greeting is static, so we can skip the first index.)
+            // Prepare history for API call
             const history = currentMessages
                 .filter((_, index) => index > 0)
                 .map(msg => ({
@@ -67,7 +64,15 @@ export default function AIHelpPage() {
                     content: msg.content
                 }));
 
-            const result = await getAIResponse(history);
+            const response = await fetch('/api/ai/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ messages: history }),
+            });
+
+            const result = await response.json();
 
             if (result.success) {
                 setMessages(prev => [...prev, {
