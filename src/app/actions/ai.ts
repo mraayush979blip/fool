@@ -19,51 +19,66 @@ export async function getAIResponse(messages: { role: 'user' | 'assistant', cont
 
     console.log('[AI Server Action] ✓ API Key found, initializing Groq client...');
 
-    try {
-        const groq = new Groq({ apiKey });
+    const models = [
+        "llama-3.3-70b-versatile",
+        "llama-3.1-70b-versatile",
+        "mixtral-8x7b-32768",
+        "llama3-8b-8192"
+    ];
 
-        console.log('[AI Server Action] Sending request to Groq API...');
-        const completion = await groq.chat.completions.create({
-            messages: [
-                {
-                    role: "system",
-                    content: "You are 'Levelone AI', a futuristic coding and learning assistant for the 'Levelone' platform. Your tone should be strategic, slightly cyberpunk/hacker-like, but helpful and encouraging. Use technical metaphors. Keep responses concise and structured with markdown. If asked about technical tasks, provide clean code snippets."
-                },
-                ...messages.map(msg => ({
-                    role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
-                    content: msg.content
-                }))
-            ],
-            model: "llama-3.3-70b-versatile",
-        });
+    const groq = new Groq({ apiKey });
+    let lastError: any = null;
 
-        console.log('[AI Server Action] ✓ Response received successfully');
-        return {
-            success: true,
-            text: completion.choices[0]?.message?.content || ""
-        };
-    } catch (error: any) {
-        console.error('[AI Server Action] ❌ Error occurred:', {
-            message: error?.message,
-            status: error?.status,
-            code: error?.code,
-            type: error?.constructor?.name
-        });
+    for (const model of models) {
+        try {
+            console.log(`[AI Server Action] Attempting with model: ${model}...`);
+            const completion = await groq.chat.completions.create({
+                messages: [
+                    {
+                        role: "system",
+                        content: "You are 'Levelone AI', a futuristic coding and learning assistant for the 'Levelone' platform. Your tone should be strategic, slightly cyberpunk/hacker-like, but helpful and encouraging. Use technical metaphors. Keep responses concise and structured with markdown. If asked about technical tasks, provide clean code snippets."
+                    },
+                    ...messages.map(msg => ({
+                        role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
+                        content: msg.content
+                    }))
+                ],
+                model: model,
+            });
 
-        // Enhanced error message with diagnostic info
-        let errorMessage = error?.message || "AI_CORE_REACH_FAILURE";
-
-        if (error?.status === 429 || error?.message?.includes('429')) {
-            errorMessage = "Rate limit exceeded. Please wait a moment before trying again.";
-        } else if (error?.status === 401 || error?.message?.includes('unauthorized')) {
-            errorMessage = "Invalid API key. Please check your GROQ_API_KEY configuration.";
-        } else if (error?.message?.includes('fetch')) {
-            errorMessage = "Network error: Unable to reach Groq API. Please check your internet connection.";
+            console.log(`[AI Server Action] ✓ Response received successfully from ${model}`);
+            return {
+                success: true,
+                text: completion.choices[0]?.message?.content || ""
+            };
+        } catch (error: any) {
+            console.warn(`[AI Server Action] ⚠ Model ${model} failed:`, error?.message || 'Unknown error');
+            lastError = error;
+            // Continue to next model
         }
-
-        return {
-            success: false,
-            error: errorMessage
-        };
     }
+
+    // If we get here, all models failed
+    console.error('[AI Server Action] ❌ All models failed. Last error:', {
+        message: lastError?.message,
+        status: lastError?.status,
+        code: lastError?.code,
+        type: lastError?.constructor?.name
+    });
+
+    // Enhanced error message with diagnostic info
+    let errorMessage = lastError?.message || "AI_CORE_REACH_FAILURE";
+
+    if (lastError?.status === 429 || lastError?.message?.includes('429')) {
+        errorMessage = "Rate limit exceeded. Please wait a moment before trying again.";
+    } else if (lastError?.status === 401 || lastError?.message?.includes('unauthorized')) {
+        errorMessage = "Invalid API key. Please check your GROQ_API_KEY configuration.";
+    } else if (lastError?.message?.includes('fetch')) {
+        errorMessage = "Network error: Unable to reach Groq API. Please check your internet connection.";
+    }
+
+    return {
+        success: false,
+        error: errorMessage
+    };
 }
