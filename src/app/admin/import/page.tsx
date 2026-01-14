@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { importStudentsAction } from '@/app/actions/students';
 import Link from 'next/link';
 
 export default function CSVImportPage() {
@@ -90,7 +89,15 @@ export default function CSVImportPage() {
                 throw new Error('No valid student data found in CSV.');
             }
 
-            const actionResult = await importStudentsAction(studentsToImport);
+            const response = await fetch('/api/students/import', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ students: studentsToImport }),
+            });
+
+            const actionResult = await response.json();
 
             if (!actionResult.success) {
                 throw new Error(actionResult.errors?.join(', ') || 'Failed to import students');
