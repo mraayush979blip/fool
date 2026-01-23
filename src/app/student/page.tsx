@@ -6,7 +6,6 @@ import { Phase } from '@/types/database';
 import {
     BookOpen,
     Video,
-    CheckCircle2,
     Clock,
     ChevronRight,
     Trophy,
@@ -15,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import Image from 'next/image';
 import { getPhaseStatus } from '@/lib/utils';
 
 export default function StudentDashboard() {
@@ -50,9 +50,8 @@ export default function StudentDashboard() {
                     return;
                 }
 
-                // Parallelize independent data fetching
                 const [
-                    streakResult,
+                    , // streakResult
                     phasesResult,
                     userResult,
                     submissionsResult,
@@ -115,7 +114,7 @@ export default function StudentDashboard() {
         if (user?.id) {
             fetchDashboardData();
         }
-    }, [user?.id]);
+    }, [user, phases.length]);
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -155,10 +154,13 @@ export default function StudentDashboard() {
                     className="h-32 md:h-48 rounded-2xl overflow-hidden shadow-lg border border-white/10 relative group"
                 >
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60 z-10" />
-                    <img
+                    <Image
                         src={`https://img.youtube.com/vi/${user.equipped_banner}/maxresdefault.jpg`}
                         alt="Profile Banner"
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        priority
+                        unoptimized
                     />
                     <div className="absolute bottom-6 left-8 z-20">
                         <h2 className="text-2xl font-black text-white drop-shadow-md">
@@ -239,7 +241,6 @@ export default function StudentDashboard() {
                             const isLive = status === 'live';
                             const isPaused = status === 'paused';
                             const isUpcoming = status === 'upcoming';
-                            const isEnded = status === 'ended';
                             const isLocked = isPaused || isUpcoming;
 
                             const content = (

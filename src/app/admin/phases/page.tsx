@@ -5,17 +5,14 @@ import Link from 'next/link';
 import {
     Plus,
     Search,
-    MoreVertical,
     Pause,
     Play,
     Edit2,
     Trash2,
-    ExternalLink,
     Layers
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Phase } from '@/types/database';
-import { format } from 'date-fns';
 import { cn, getPhaseStatus } from '@/lib/utils';
 
 export default function PhaseListPage() {

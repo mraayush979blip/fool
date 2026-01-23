@@ -15,11 +15,10 @@ import {
     ArrowLeft,
     Loader2,
     Upload,
-    X,
-    Download
+    X
 } from 'lucide-react';
 import Link from 'next/link';
-import YouTube from 'react-youtube';
+import Image from 'next/image';
 import { getPhaseStatus } from '@/lib/utils';
 import { isValidGitHubUrl, isValidFileSize, formatFileSize, isValidAssignmentFileType } from '@/utils/validation';
 
@@ -36,7 +35,6 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
     const [loading, setLoading] = useState(true);
     const [videoCompleted, setVideoCompleted] = useState(false);
     const [submittingIndex, setSubmittingIndex] = useState<number | null>(null);
-    const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
 
     // Multiple submissions state
     const [submissions, setSubmissions] = useState<Record<number, any>>({});
@@ -50,16 +48,12 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         error?: string | null;
     }>>({});
 
-    const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [isVideoStarted, setIsVideoStarted] = useState(false);
 
-    // Time tracking
-    const lastBeatRef = useRef<number>(Date.now());
     const [timeSpent, setTimeSpent] = useState(0);
     const timeSpentRef = useRef(0);
     const [isUnlocked, setIsUnlocked] = useState(false);
-    const remainingSeconds = phase ? Math.max(0, (phase.min_seconds_required || 0) - timeSpent) : 0;
 
     useEffect(() => {
         const fetchPhaseData = async () => {
@@ -173,7 +167,6 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 }
             } catch (err: any) {
                 console.error('Error fetching phase:', err);
-                setError(err.message);
             } finally {
                 setLoading(false);
             }
@@ -182,7 +175,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         if (id && user?.id) {
             fetchPhaseData();
         }
-    }, [id, user?.id]);
+    }, [id, user, router, videoCompleted, phase]);
 
     // 1. Live Ticking Timer (Every second)
     useEffect(() => {
@@ -294,36 +287,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         return () => clearInterval(heartbeatInterval);
     }, [phase, user, id, isVideoStarted, videoCompleted]); // Added isVideoStarted and videoCompleted to catch state changes!
 
-    const handleVideoEnd = async () => {
-        if (!user || videoCompleted) return;
-
-        try {
-            console.log('✅ Video completed, updating database...');
-            const { error: updateError } = await supabase
-                .from('student_phase_activity')
-                .upsert({
-                    phase_id: id,
-                    student_id: user.id,
-                    video_completed: true,
-                    last_activity_at: new Date().toISOString()
-                }, {
-                    onConflict: 'student_id,phase_id'
-                });
-
-            if (updateError) throw updateError;
-            setVideoCompleted(true);
-
-            // Log activity
-            await supabase.from('activity_logs').insert({
-                student_id: user.id,
-                phase_id: id,
-                activity_type: 'VIDEO_COMPLETED',
-                payload: { video_id: extractVideoId(phase.youtube_url) }
-            });
-        } catch (err) {
-            console.error('Error updating video completion:', err);
-        }
-    };
+    // Video end handler removed (unused)
 
     const handleDownloadAssignment = async (e: React.MouseEvent, url: string) => {
         e.preventDefault();
@@ -398,7 +362,6 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         const data = formData[index];
         if (!data?.selectedFile || !user) return null;
 
-        setUploadingIndex(index);
         setFormData(prev => ({ ...prev, [index]: { ...prev[index], error: null } }));
 
         try {
@@ -428,8 +391,6 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 [index]: { ...prev[index], error: 'Failed to upload file: ' + error.message }
             }));
             return null;
-        } finally {
-            setUploadingIndex(null);
         }
     };
 
@@ -660,10 +621,12 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                         className="absolute inset-0 z-10 cursor-pointer group"
                                         onClick={() => setIsVideoStarted(true)}
                                     >
-                                        <img
+                                        <Image
                                             src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
                                             alt="Video Thumbnail"
-                                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                            fill
+                                            className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                            unoptimized
                                         />
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <div className="w-20 h-14 bg-red-600 rounded-xl flex items-center justify-center group-hover:bg-red-700 transition-colors shadow-xl">
@@ -940,23 +903,4 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
     );
 }
 
-function ExternalLink(props: any) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M15 3h6v6" />
-            <path d="M10 14 21 3" />
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-        </svg>
-    )
-}
+

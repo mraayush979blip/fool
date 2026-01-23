@@ -69,7 +69,7 @@ export default function CSVImportPage() {
                 throw new Error('CSV must contain at least "name", "email", and "password" columns.');
             }
 
-            const studentsToImport = rows.slice(1).map((row, index) => {
+            const studentsToImport = rows.slice(1).map((row) => {
                 if (row.length < headers.length) return null;
 
                 // If checking for optional fields, ensure we don't return undefined if column missing

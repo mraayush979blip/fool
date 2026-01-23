@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
     ArrowLeft,
     Save,
     Calendar,
     Video,
     FileText,
-    CheckCircle2,
     AlertCircle,
     Upload,
     X,
@@ -27,7 +26,6 @@ export default function PhaseForm({ id }: PhaseFormProps) {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(!!id);
     const [error, setError] = useState<string | null>(null);
-    const [uploadingFile, setUploadingFile] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     const [formData, setFormData] = useState<Partial<Phase>>({
@@ -47,34 +45,33 @@ export default function PhaseForm({ id }: PhaseFormProps) {
     });
 
     useEffect(() => {
-        if (id) {
-            fetchPhase();
-        }
-    }, [id]);
+        const fetchPhase = async () => {
+            if (!id) return;
+            try {
+                const { data, error } = await supabase
+                    .from('phases')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
 
-    const fetchPhase = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('phases')
-                .select('*')
-                .eq('id', id)
-                .single();
-
-            if (error) throw error;
-            if (data) {
-                setFormData({
-                    ...data,
-                    start_date: new Date(data.start_date).toISOString().split('T')[0],
-                    end_date: new Date(data.end_date).toISOString().split('T')[0],
-                });
+                if (error) throw error;
+                if (data) {
+                    setFormData({
+                        ...data,
+                        start_date: new Date(data.start_date).toISOString().split('T')[0],
+                        end_date: new Date(data.end_date).toISOString().split('T')[0],
+                    });
+                }
+            } catch (error: any) {
+                console.error('Error fetching phase:', error);
+                setError(error.message);
+            } finally {
+                setFetching(false);
             }
-        } catch (error: any) {
-            console.error('Error fetching phase:', error);
-            setError(error.message);
-        } finally {
-            setFetching(false);
-        }
-    };
+        };
+
+        fetchPhase();
+    }, [id]);
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -99,7 +96,6 @@ export default function PhaseForm({ id }: PhaseFormProps) {
     const handleFileUpload = async () => {
         if (!selectedFile) return null;
 
-        setUploadingFile(true);
         setError(null);
 
         try {
@@ -125,8 +121,6 @@ export default function PhaseForm({ id }: PhaseFormProps) {
             console.error('Error uploading file:', error);
             setError('Failed to upload file: ' + error.message);
             return null;
-        } finally {
-            setUploadingFile(false);
         }
     };
 

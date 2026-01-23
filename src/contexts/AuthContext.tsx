@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase, getCurrentUser, signIn, signOut } from '@/lib/supabase';
+import { supabase, signIn, signOut } from '@/lib/supabase';
 import { User } from '@/types/database';
 
 interface AuthContextType {
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         }
 
                         try {
-                            const { data: userData, error: userError } = await supabase
+                            const { data: userData } = await supabase
                                 .from('users')
                                 .select('*')
                                 .eq('id', session.user.id)
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const fetchUserProfile = async (userId: string) => {
         try {
-            const { data: userData, error: userError } = await supabase
+            const { data: userData } = await supabase
                 .from('users')
                 .select('*')
                 .eq('id', userId)

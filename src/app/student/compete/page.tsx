@@ -43,100 +43,100 @@ export default function CompetePage() {
     const [userBadges, setUserBadges] = useState<any[]>([]);
     const [rankContext, setRankContext] = useState<RankContext | null>(null);
 
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            // 1. Update own streak on page load
-            if (user) {
-                console.log('🔄 [Compete] Updating streak...');
-                const { error: streakErr } = await supabase.rpc('update_student_streak', { student_uuid: user.id });
-                if (streakErr) console.error('⚠️ [Compete] Streak update error:', streakErr);
-
-                // Fetch User Badges
-                console.log('🔄 [Compete] Fetching user badges...');
-                const { data: ubData, error: ubErr } = await supabase
-                    .from('user_badges')
-                    .select('*')
-                    .eq('user_id', user.id);
-                if (ubErr) console.error('⚠️ [Compete] Badges fetch error:', ubErr);
-                setUserBadges(ubData || []);
-
-                // Fetch Rank Context
-                console.log('🔄 [Compete] Fetching rank context...');
-                const { data: rankData, error: rankErr } = await supabase
-                    .rpc('get_student_rank_context', { current_student_id: user.id });
-                if (rankErr) console.error('⚠️ [Compete] Rank context error:', rankErr);
-                setRankContext(rankData);
-            }
-
-            // Fetch All Badges
-            const { data: bData } = await supabase.from('badges').select('*');
-            setBadges(bData || []);
-
-            // 2. Fetch Leaderboard using new Optimized RPC
-            console.log('🔄 [Compete] Fetching leaderboard...');
-            const { data: lbData, error: lbError } = await supabase
-                .rpc('get_leaderboard_v2');
-
-            if (lbError) {
-                console.error('❌ [Compete] Leaderboard RPC failed:', lbError);
-                throw lbError;
-            }
-
-            const processedLB = (lbData || []).map((entry: any) => ({
-                id: entry.user_id,
-                name: entry.user_name,
-                avatar: entry.user_avatar || '👤',
-                current_streak: entry.current_streak || 0,
-                completed_phases: Number(entry.completed_phases) || 0,
-                activity_points: entry.activity_points || 0
-            }));
-
-            setLeaderboard(processedLB);
-
-            // 3. Fetch Total Students
-            const { count } = await supabase
-                .from('users')
-                .select('*', { count: 'exact', head: true })
-                .eq('role', 'student');
-            setTotalStudents(count || 0);
-
-            // 4. Fetch Phase Completion Stats
-            const { data: phases } = await supabase
-                .from('phases')
-                .select('phase_number, title, id')
-                .eq('is_active', true)
-                .order('phase_number', { ascending: true });
-
-            if (phases) {
-                const stats = await Promise.all(phases.map(async (p) => {
-                    const { count: completedCount } = await supabase
-                        .from('submissions')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('phase_id', p.id)
-                        .eq('status', 'valid');
-
-                    return {
-                        phase_number: p.phase_number,
-                        title: p.title,
-                        completed_count: completedCount || 0
-                    };
-                }));
-                setPhaseStats(stats);
-            }
-
-        } catch (error: any) {
-            console.error('❌ [Compete] Global Fetch Error:', error);
-            // If it's a Supabase error, it might not be an instance of Error
-            if (error && typeof error === 'object') {
-                console.error('Error Details:', JSON.stringify(error, null, 2));
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // 1. Update own streak on page load
+                if (user) {
+                    console.log('🔄 [Compete] Updating streak...');
+                    const { error: streakErr } = await supabase.rpc('update_student_streak', { student_uuid: user.id });
+                    if (streakErr) console.error('⚠️ [Compete] Streak update error:', streakErr);
+
+                    // Fetch User Badges
+                    console.log('🔄 [Compete] Fetching user badges...');
+                    const { data: ubData, error: ubErr } = await supabase
+                        .from('user_badges')
+                        .select('*')
+                        .eq('user_id', user.id);
+                    if (ubErr) console.error('⚠️ [Compete] Badges fetch error:', ubErr);
+                    setUserBadges(ubData || []);
+
+                    // Fetch Rank Context
+                    console.log('🔄 [Compete] Fetching rank context...');
+                    const { data: rankData, error: rankErr } = await supabase
+                        .rpc('get_student_rank_context', { current_student_id: user.id });
+                    if (rankErr) console.error('⚠️ [Compete] Rank context error:', rankErr);
+                    setRankContext(rankData);
+                }
+
+                // Fetch All Badges
+                const { data: bData } = await supabase.from('badges').select('*');
+                setBadges(bData || []);
+
+                // 2. Fetch Leaderboard using new Optimized RPC
+                console.log('🔄 [Compete] Fetching leaderboard...');
+                const { data: lbData, error: lbError } = await supabase
+                    .rpc('get_leaderboard_v2');
+
+                if (lbError) {
+                    console.error('❌ [Compete] Leaderboard RPC failed:', lbError);
+                    throw lbError;
+                }
+
+                const processedLB = (lbData || []).map((entry: any) => ({
+                    id: entry.user_id,
+                    name: entry.user_name,
+                    avatar: entry.user_avatar || '👤',
+                    current_streak: entry.current_streak || 0,
+                    completed_phases: Number(entry.completed_phases) || 0,
+                    activity_points: entry.activity_points || 0
+                }));
+
+                setLeaderboard(processedLB);
+
+                // 3. Fetch Total Students
+                const { count } = await supabase
+                    .from('users')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('role', 'student');
+                setTotalStudents(count || 0);
+
+                // 4. Fetch Phase Completion Stats
+                const { data: phases } = await supabase
+                    .from('phases')
+                    .select('phase_number, title, id')
+                    .eq('is_active', true)
+                    .order('phase_number', { ascending: true });
+
+                if (phases) {
+                    const stats = await Promise.all(phases.map(async (p) => {
+                        const { count: completedCount } = await supabase
+                            .from('submissions')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('phase_id', p.id)
+                            .eq('status', 'valid');
+
+                        return {
+                            phase_number: p.phase_number,
+                            title: p.title,
+                            completed_count: completedCount || 0
+                        };
+                    }));
+                    setPhaseStats(stats);
+                }
+
+            } catch (error: any) {
+                console.error('❌ [Compete] Global Fetch Error:', error);
+                // If it's a Supabase error, it might not be an instance of Error
+                if (error && typeof error === 'object') {
+                    console.error('Error Details:', JSON.stringify(error, null, 2));
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchData();
     }, [user]);
 

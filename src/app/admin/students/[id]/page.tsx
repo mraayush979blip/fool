@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
     ArrowLeft,
@@ -29,11 +29,7 @@ export default function StudentDetailPage() {
     const [submissions, setSubmissions] = useState<(Submission & { phase: Phase })[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchStudentData();
-    }, [id]);
-
-    const fetchStudentData = async () => {
+    const fetchStudentData = useCallback(async () => {
         setLoading(true);
         try {
             // Fetch student info
@@ -67,7 +63,6 @@ export default function StudentDetailPage() {
 
             if (activityData) {
                 const totalSeconds = activityData.reduce((acc, curr) => acc + (curr.total_time_spent_seconds || 0), 0);
-                const hrs = Math.floor(totalSeconds / 3600);
                 setStudent(prev => prev ? { ...prev, total_time_spent_seconds: totalSeconds } : null);
             }
 
@@ -76,7 +71,11 @@ export default function StudentDetailPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        fetchStudentData();
+    }, [fetchStudentData]);
 
     const toggleStatus = async () => {
         if (!student) return;

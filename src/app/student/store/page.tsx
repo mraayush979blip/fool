@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, ArrowLeft, ShoppingBag, AlertCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import StoreItemCard, { StoreItem } from '@/components/gamification/StoreItemCard';
 import PointsDisplay from '@/components/gamification/PointsDisplay';
@@ -23,80 +23,80 @@ export default function StorePage() {
     const [inventory, setInventory] = useState<Set<string>>(new Set());
     const [purchasingId, setPurchasingId] = useState<string | null>(null);
 
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            if (!user) return;
-
-            // 1. Fetch User Stats (Points, Streak, Equips)
-            const { data: userData } = await supabase
-                .from('users')
-                .select('points, current_streak, equipped_theme, equipped_banner, equipped_avatar')
-                .eq('id', user.id)
-                .single();
-
-            if (userData) {
-                setUserPoints(userData.points || 0);
-                setUserStreak(userData.current_streak || 0);
-                setEquippedItems({
-                    theme: userData.equipped_theme || 'default',
-                    banner: userData.equipped_banner || 'default',
-                    avatar: userData.equipped_avatar || '👤'
-                });
-            }
-
-            // 2. Fetch User Inventory
-            const { data: invData } = await supabase
-                .from('user_inventory')
-                .select('item_id')
-                .eq('user_id', user.id);
-
-            const invSet = new Set((invData || []).map((i: any) => i.item_id));
-            setInventory(invSet);
-
-            // 3. Fetch Store Items
-            const { data: itemData } = await supabase
-                .from('store_items')
-                .select('*')
-                .order('cost', { ascending: true });
-
-            const fetchedItems = itemData || [];
-
-            // 4. Prepend Default Options (Ensure they always exist even if SQL wasn't run)
-            const defaultItems: StoreItem[] = [
-                {
-                    id: 'default-avatar-id',
-                    code: 'CHAR_DEFAULT',
-                    name: 'Student',
-                    description: 'The standard Levelone student avatar.',
-                    cost: 0,
-                    type: 'avatar',
-                    asset_value: '👤'
-                }
-            ];
-
-            // Only add defaults if they don't already exist in the database results
-            let finalItems = [...defaultItems.filter(d => !fetchedItems.some(f => f.code === d.code)), ...fetchedItems]
-                .filter(item => item.code !== 'DEFAULT_BANNER');
-
-            // 5. Final Sort: Default Avatar MUST be first, then order by cost
-            finalItems = finalItems.sort((a, b) => {
-                if (a.code === 'CHAR_DEFAULT') return -1;
-                if (b.code === 'CHAR_DEFAULT') return 1;
-                return a.cost - b.cost;
-            });
-
-            setItems(finalItems);
-
-        } catch (error) {
-            console.error('Error fetching store data:', error);
-            toast.error('Failed to load store');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                if (!user) return;
+
+                // 1. Fetch User Stats (Points, Streak, Equips)
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('points, current_streak, equipped_theme, equipped_banner, equipped_avatar')
+                    .eq('id', user.id)
+                    .single();
+
+                if (userData) {
+                    setUserPoints(userData.points || 0);
+                    setUserStreak(userData.current_streak || 0);
+                    setEquippedItems({
+                        theme: userData.equipped_theme || 'default',
+                        banner: userData.equipped_banner || 'default',
+                        avatar: userData.equipped_avatar || '👤'
+                    });
+                }
+
+                // 2. Fetch User Inventory
+                const { data: invData } = await supabase
+                    .from('user_inventory')
+                    .select('item_id')
+                    .eq('user_id', user.id);
+
+                const invSet = new Set((invData || []).map((i: any) => i.item_id));
+                setInventory(invSet);
+
+                // 3. Fetch Store Items
+                const { data: itemData } = await supabase
+                    .from('store_items')
+                    .select('*')
+                    .order('cost', { ascending: true });
+
+                const fetchedItems = itemData || [];
+
+                // 4. Prepend Default Options (Ensure they always exist even if SQL wasn't run)
+                const defaultItems: StoreItem[] = [
+                    {
+                        id: 'default-avatar-id',
+                        code: 'CHAR_DEFAULT',
+                        name: 'Student',
+                        description: 'The standard Levelone student avatar.',
+                        cost: 0,
+                        type: 'avatar',
+                        asset_value: '👤'
+                    }
+                ];
+
+                // Only add defaults if they don't already exist in the database results
+                let finalItems = [...defaultItems.filter(d => !fetchedItems.some(f => f.code === d.code)), ...fetchedItems]
+                    .filter(item => item.code !== 'DEFAULT_BANNER');
+
+                // 5. Final Sort: Default Avatar MUST be first, then order by cost
+                finalItems = finalItems.sort((a, b) => {
+                    if (a.code === 'CHAR_DEFAULT') return -1;
+                    if (b.code === 'CHAR_DEFAULT') return 1;
+                    return a.cost - b.cost;
+                });
+
+                setItems(finalItems);
+
+            } catch (error) {
+                console.error('Error fetching store data:', error);
+                toast.error('Failed to load store');
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchData();
     }, [user]);
 

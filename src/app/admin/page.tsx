@@ -12,8 +12,7 @@ import {
     Plus,
     Upload,
     BarChart3,
-    TrendingUp,
-    Percent
+    TrendingUp
 } from 'lucide-react';
 import Link from 'next/link';
 

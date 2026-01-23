@@ -2,7 +2,7 @@
 
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User as UserIcon, BookOpen, Trophy, ShoppingBag, Terminal } from 'lucide-react';
+import { LogOut, BookOpen, Trophy, ShoppingBag, Terminal } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import InstallPWA from '@/components/InstallPWA';

@@ -49,7 +49,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid JSON body', details: e.message }, { status: 400 });
     }
 
-    let { phaseData, students, studentEmails } = body;
+    const { phaseData, studentEmails } = body;
+    let { students } = body;
 
     // Backwards compatibility for old "studentEmails" key
     if (!students && studentEmails && Array.isArray(studentEmails)) {

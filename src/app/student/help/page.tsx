@@ -10,8 +10,7 @@ import {
     ChevronRight,
     Command,
     Loader2,
-    ArrowLeft,
-    Monitor
+    ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
 

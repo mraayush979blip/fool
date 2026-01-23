@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
     ArrowLeft,
     Github,
-    FileText,
     ExternalLink,
     Search,
     BarChart3,
@@ -15,13 +14,8 @@ import {
     Download
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { Phase, Submission, User } from '@/types/database';
+import { Phase, Submission } from '@/types/database';
 import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
     Tooltip,
     ResponsiveContainer,
     Cell,
@@ -46,50 +40,50 @@ export default function PhaseAssignmentDetailsPage({ params }: { params: Promise
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Fetch phase details
+                const { data: phaseData, error: phaseError } = await supabase
+                    .from('phases')
+                    .select('*')
+                    .eq('id', phaseId)
+                    .single();
+
+                if (phaseError) throw phaseError;
+                setPhase(phaseData);
+
+                // Fetch total active students
+                const { count, error: studentsError } = await supabase
+                    .from('users')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('role', 'student')
+                    .eq('status', 'active');
+
+                if (studentsError) throw studentsError;
+                setTotalStudents(count || 0);
+
+                // Fetch submissions with student info
+                const { data: subsData, error: subsError } = await supabase
+                    .from('submissions')
+                    .select('*, student:users(name, roll_number, batch)')
+                    .eq('phase_id', phaseId)
+                    .is('is_deleted', false);
+
+                if (subsError) throw subsError;
+                setSubmissions((subsData as any) || []);
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (phaseId) {
             fetchData();
         }
     }, [phaseId]);
-
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            // Fetch phase details
-            const { data: phaseData, error: phaseError } = await supabase
-                .from('phases')
-                .select('*')
-                .eq('id', phaseId)
-                .single();
-
-            if (phaseError) throw phaseError;
-            setPhase(phaseData);
-
-            // Fetch total active students
-            const { count, error: studentsError } = await supabase
-                .from('users')
-                .select('id', { count: 'exact', head: true })
-                .eq('role', 'student')
-                .eq('status', 'active');
-
-            if (studentsError) throw studentsError;
-            setTotalStudents(count || 0);
-
-            // Fetch submissions with student info
-            const { data: subsData, error: subsError } = await supabase
-                .from('submissions')
-                .select('*, student:users(name, roll_number, batch)')
-                .eq('phase_id', phaseId)
-                .is('is_deleted', false);
-
-            if (subsError) throw subsError;
-            setSubmissions((subsData as any) || []);
-
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const filteredSubmissions = submissions.filter(sub =>
         sub.student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -105,8 +99,6 @@ export default function PhaseAssignmentDetailsPage({ params }: { params: Promise
         { name: 'Submitted', value: submittedCount, color: '#10b981' }, // green-500
         { name: 'Pending', value: pendingCount, color: '#ef4444' }, // red-500
     ];
-
-    const COLORS = ['#10b981', '#ef4444'];
 
     if (loading) {
         return (

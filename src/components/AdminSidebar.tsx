@@ -7,7 +7,6 @@ import {
     Layers,
     Users,
     Upload,
-    Settings,
     LogOut,
     FileText
 } from 'lucide-react';

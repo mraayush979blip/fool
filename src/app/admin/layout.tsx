@@ -1,8 +1,6 @@
 'use client';
 
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 import AdminSidebar from '@/components/AdminSidebar';
 
 export default function AdminLayout({
