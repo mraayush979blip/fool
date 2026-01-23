@@ -197,8 +197,39 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                     title: 'New Phase Available',
                     message: `Phase ${dataToSave.phase_number}: ${dataToSave.title} has been uploaded. Check it out!`,
                     type: 'new_phase',
-                    reference_id: null // or we could get the ID if we selected it
+                    reference_id: null
                 });
+
+                // Fetch active students to send emails
+                const { data: students, error: studentsError } = await supabase
+                    .from('users')
+                    .select('name, email')
+                    .eq('role', 'student')
+                    .eq('status', 'active');
+
+                if (!studentsError && students && students.length > 0) {
+                    console.log('Sending email notifications for students:', students);
+                    // Call the internal email API route
+                    try {
+                        const response = await fetch('/api/notifications/email', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                phaseData: dataToSave,
+                                students: students, // Send the array of objects {name, email}
+                            }),
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            console.error('Email API Error Response:', errorData);
+                        }
+                    } catch (err) {
+                        console.error('Failed to send email notifications:', err);
+                    }
+                }
             }
             router.push('/admin/phases');
         } catch (error: any) {

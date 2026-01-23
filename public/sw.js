@@ -1,4 +1,4 @@
-const CACHE_NAME = 'levelone-cache-v4'; // Bumped version to v4
+const CACHE_NAME = 'levelone-cache-v5'; // Bumped version to v5
 const ASSETS_TO_CACHE = [
     '/',
     '/manifest.webmanifest',
