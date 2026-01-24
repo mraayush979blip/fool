@@ -1,4 +1,4 @@
-const CACHE_NAME = 'levelone-cache-v6'; // Bumped version to v6
+const CACHE_NAME = 'levelone-cache-v7'; // Bumped version to v7/fix-extension-error
 const ASSETS_TO_CACHE = [
     '/',
     '/manifest.webmanifest',
@@ -59,9 +59,14 @@ self.addEventListener('fetch', (event) => {
     }
 
     // 2. For GET requests (Assets, CSS, Images): Cache First, then Network
-    // EXCLUDE: API calls and Supabase requests (to avoid stale data)
+    // EXCLUDE: API calls, Supabase requests, and non-http schemes (e.g. chrome-extension)
     const url = new URL(event.request.url);
-    if (event.request.method === 'GET' && !url.pathname.startsWith('/api/') && !url.hostname.includes('supabase')) {
+    if (
+        event.request.method === 'GET' &&
+        url.protocol.startsWith('http') && // Only cache http/https
+        !url.pathname.startsWith('/api/') &&
+        !url.hostname.includes('supabase')
+    ) {
         event.respondWith(
             caches.match(event.request).then((cached) => {
                 return cached || fetch(event.request).then(response => {
