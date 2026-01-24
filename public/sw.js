@@ -1,4 +1,4 @@
-const CACHE_NAME = 'levelone-cache-v5'; // Bumped version to v5
+const CACHE_NAME = 'levelone-cache-v6'; // Bumped version to v6
 const ASSETS_TO_CACHE = [
     '/',
     '/manifest.webmanifest',
@@ -74,6 +74,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 3. For POST/PUT/DELETE: Network Only (Do not intercept)
-    event.respondWith(fetch(event.request));
+    // 3. For POST/PUT/DELETE or API requests: Do NOT intercept.
+    // Let the browser handle these directly to ensure request bodies (streams) are preserved.
+    return;
 });
