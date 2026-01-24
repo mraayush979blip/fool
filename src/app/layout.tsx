@@ -68,7 +68,7 @@ export default function RootLayout({
                       });
                   }
                 });
-              }
+                });
 
               // CRITICAL FALLBACK: Auto-reload on Chunk Load Errors (404)
               window.addEventListener('error', function(e) {
