@@ -37,9 +37,12 @@ export async function POST(request: Request) {
   }
 
   try {
+    console.log('--- Email API Headers ---');
+    request.headers.forEach((val, key) => console.log(`${key}: ${val}`));
+
     const rawBody = await request.text();
-    console.log('--- Email API Raw Body ---');
-    console.log(rawBody);
+    console.log(`--- Email API Raw Body (Length: ${rawBody.length}) ---`);
+    console.log(`"${rawBody}"`);
 
     let body;
     try {
