@@ -58,6 +58,11 @@ export default function RootLayout({
                     // FORCE UPDATE check
                     registration.update();
                     
+                    // Specific logic to help users stuck on old SW
+                    if (registration.active) {
+                        registration.active.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                    
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
