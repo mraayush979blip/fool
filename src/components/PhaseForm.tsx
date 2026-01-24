@@ -205,15 +205,18 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                     console.log('Sending email notifications for students:', students);
                     // Call the internal email API route
                     try {
-                        const response = await fetch('/api/notifications/email', {
+                        const payload = {
+                            phaseData: dataToSave,
+                            students: students,
+                        };
+                        console.log('Sending email payload:', payload);
+
+                        const response = await fetch('/api/notifications/send', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({
-                                phaseData: dataToSave,
-                                students: students, // Send the array of objects {name, email}
-                            }),
+                            body: JSON.stringify(payload),
                         });
 
                         if (!response.ok) {
