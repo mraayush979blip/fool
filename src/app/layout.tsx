@@ -50,40 +50,23 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                  // EMERGENCY FIX: Unregister all existing SWs to kill the buggy one
-                  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                    for(let registration of registrations) {
-                      console.log('Unregistering SW:', registration);
-                      registration.unregister();
-                    }
-                    
-                    // Re-register the SAFE version after a small delay
-                    setTimeout(() => {
-                        navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                            console.log('Safe ServiceWorker registration successful');
-                        });
-                    }, 500);
-                  });
-                    
-                    registration.onupdatefound = () => {
-                        const installingWorker = registration.installing;
-                        installingWorker.onstatechange = () => {
-                            if (installingWorker.state === 'installed') {
-                                if (navigator.serviceWorker.controller) {
-                                    console.log('New content available; please refresh.'); 
-                                    // FORCE RELOAD Only if strictly needed, otherwise let user refresh
-                                    // window.location.reload(); 
-                                } else {
-                                    console.log('Content is cached for offline use.');
-                                }
-                            }
-                        };
-                    };
-                  }, function(err) {
-                    console.log('ServiceWorker registration failed: ', err);
-                  });
+                  if (navigator.serviceWorker) {
+                      // EMERGENCY FIX: Unregister all existing SWs first
+                      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) {
+                          console.log('Unregistering SW:', registration);
+                          registration.unregister();
+                        }
+                        
+                        // Re-register safe version
+                        setTimeout(() => {
+                            navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                                console.log('Safe SW registered');
+                            }).catch(console.error);
+                        }, 500);
+                      });
+                  }
                 });
               }
 

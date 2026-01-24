@@ -16,6 +16,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { Phase } from '@/types/database';
 import { isValidFileSize, formatFileSize, isValidAssignmentFileType } from '@/utils/validation';
+import { sendEmailNotification } from '@/actions/sendEmail';
 
 interface PhaseFormProps {
     id?: string;
@@ -203,28 +204,23 @@ export default function PhaseForm({ id }: PhaseFormProps) {
 
                 if (!studentsError && students && students.length > 0) {
                     console.log('Sending email notifications for students:', students);
-                    // Call the internal email API route
+                    // Call the Server Action directly (Bypasses Service Worker)
                     try {
                         const payload = {
                             phaseData: dataToSave,
                             students: students,
                         };
-                        console.log('Sending email payload:', payload);
+                        console.log('Invoking Server Action with payload:', payload);
 
-                        const response = await fetch('/api/notifications/send', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(payload),
-                        });
+                        const result = await sendEmailNotification(payload);
 
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            console.error('Email API Error Response:', errorData);
+                        if (!result.success) {
+                            console.error('Email Server Action Failed:', result.error);
+                        } else {
+                            console.log('Email Server Action Success:', result.sentCount, 'sent', result.failedCount, 'failed');
                         }
                     } catch (err) {
-                        console.error('Failed to send email notifications:', err);
+                        console.error('Failed to send email notifications via Server Action:', err);
                     }
                 }
             }
