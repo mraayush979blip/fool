@@ -52,16 +52,20 @@ export default function RootLayout({
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                    console.log('ServiceWorker registration successful');
-                    
-                    // FORCE UPDATE check
-                    registration.update();
-                    
-                    // Specific logic to help users stuck on old SW
-                    if (registration.active) {
-                        registration.active.postMessage({ type: 'SKIP_WAITING' });
+                  // EMERGENCY FIX: Unregister all existing SWs to kill the buggy one
+                  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for(let registration of registrations) {
+                      console.log('Unregistering SW:', registration);
+                      registration.unregister();
                     }
+                    
+                    // Re-register the SAFE version after a small delay
+                    setTimeout(() => {
+                        navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                            console.log('Safe ServiceWorker registration successful');
+                        });
+                    }, 500);
+                  });
                     
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
