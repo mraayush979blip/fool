@@ -10,8 +10,7 @@ import { cn } from '@/lib/utils';
 
 const themes = [
     { id: 'theme-light', name: 'Ivory', icon: Sun, color: '#0891b2' },
-    { id: 'theme-dark', name: 'Midnight', icon: Zap, color: '#f59e0b' },
-    { id: 'theme-holi', name: 'Holi 🎨', icon: Sparkles, color: '#FF6D00' }
+    { id: 'theme-dark', name: 'Midnight', icon: Zap, color: '#f59e0b' }
 ];
 
 export default function NavigationMenu() {

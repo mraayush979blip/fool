@@ -1,5 +1,8 @@
 -- Refactored Revocation Logic: Optimized for CPU and end-of-day inclusive deadlines
 
+DROP FUNCTION IF EXISTS check_and_revoke_students();
+DROP FUNCTION IF EXISTS check_and_revoke_self();
+
 -- 1. Optimized global revocation check (Set-based, no loops)
 CREATE OR REPLACE FUNCTION check_and_revoke_students()
 RETURNS JSONB
@@ -28,6 +31,7 @@ BEGIN
                 AND p.is_active = true
                 AND p.is_mandatory = true
                 AND NOT EXISTS (
+                    -- For multi-option or single-slot phases, any valid submission is enough to be safe
                     SELECT 1 FROM submissions s
                     WHERE s.student_id = u.id
                       AND s.phase_id = p.id
@@ -114,6 +118,7 @@ BEGIN
           AND p.is_active = true
           AND p.is_mandatory = true
           AND NOT EXISTS (
+              -- One valid submission makes the student safe from auto-revoke
               SELECT 1 FROM submissions s
               WHERE s.student_id = current_student_id
                 AND s.phase_id = p.id

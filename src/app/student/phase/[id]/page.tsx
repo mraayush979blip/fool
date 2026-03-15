@@ -134,10 +134,19 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
     useEffect(() => {
         if (phase && submissionsData) {
+            // Wait for selection if multiple options present
+            if (phase.has_multiple_options && !selectedOptionId) return;
+
             const submissionsMap: Record<number, any> = {};
             const initialFormData: any = {};
 
-            const totalAssignments = phase.total_assignments || 1;
+            const totalAssignments = phase.has_multiple_options ? 1 : (phase.total_assignments || 1);
+            const selectedOption = phase.has_multiple_options 
+                ? phase.options?.find((o: any) => o.id === selectedOptionId)
+                : null;
+            const currentAllowedType = phase.has_multiple_options 
+                ? selectedOption?.allowed_submission_type || phase.allowed_submission_type
+                : phase.allowed_submission_type;
 
             submissionsData.forEach((sub: any) => {
                 const idx = sub.assignment_index || 1;
@@ -154,7 +163,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
             for (let i = 1; i <= totalAssignments; i++) {
                 if (!initialFormData[i]) {
                     initialFormData[i] = {
-                        submissionType: phase.allowed_submission_type === 'file' ? 'file' : 'github',
+                        submissionType: currentAllowedType === 'file' ? 'file' : 'github',
                         githubUrl: '',
                         notes: '',
                         selectedFile: null,
@@ -166,7 +175,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
             setSubmissions(submissionsMap);
             setFormData(initialFormData);
         }
-    }, [phase, submissionsData]);
+    }, [phase, submissionsData, selectedOptionId]);
 
     // --- Core Logic Hooks ---
 
@@ -513,6 +522,8 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
     const currentYoutubeUrl = phase.has_multiple_options ? selectedOption?.youtube_url : phase.youtube_url;
     const currentAssignmentFileUrl = phase.has_multiple_options ? selectedOption?.assignment_file_url : phase.assignment_file_url;
     const currentAssignmentResourceUrl = phase.has_multiple_options ? selectedOption?.assignment_resource_url : phase.assignment_resource_url;
+    const currentAllowedType = phase.has_multiple_options ? selectedOption?.allowed_submission_type || phase.allowed_submission_type : phase.allowed_submission_type;
+    const totalAssignments = phase.has_multiple_options ? 1 : (phase.total_assignments || 1);
 
     if (phase.has_multiple_options && !selectedOptionId) {
         return (
@@ -721,7 +732,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                         </div>
 
                                         <form onSubmit={(e) => handleSubmit(e, idx)} className="space-y-6">
-                                            {phase.allowed_submission_type === 'both' && (
+                                            {currentAllowedType === 'both' && (
                                                 <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
                                                     <button
                                                         type="button"

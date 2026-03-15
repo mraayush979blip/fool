@@ -135,7 +135,8 @@ export default function PhaseForm({ id }: PhaseFormProps) {
             title: '',
             youtube_url: '',
             assignment_file_url: '',
-            assignment_resource_url: ''
+            assignment_resource_url: '',
+            allowed_submission_type: formData.allowed_submission_type || 'both'
         };
         setFormData(prev => ({
             ...prev,
@@ -411,6 +412,26 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                         </div>
                     </div>
 
+                    <div className="sm:col-span-6">
+                        <label htmlFor="allowed_submission_type" className="block text-sm font-bold text-gray-700">
+                            Allowed Submission Type (Global Default)
+                        </label>
+                        <div className="mt-1">
+                            <select
+                                id="allowed_submission_type"
+                                name="allowed_submission_type"
+                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
+                                value={formData.allowed_submission_type || 'both'}
+                                onChange={(e) => setFormData({ ...formData, allowed_submission_type: e.target.value as 'github' | 'file' | 'both' })}
+                            >
+                                <option value="both">Both (GitHub Link & File Upload)</option>
+                                <option value="github">GitHub Link Only</option>
+                                <option value="file">File Upload Only</option>
+                            </select>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">How should students submit their work for this phase?</p>
+                    </div>
+
                     <div className="sm:col-span-6 border-t border-gray-100 pt-6">
                         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                             <div>
@@ -596,6 +617,18 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                                 value={option.assignment_resource_url}
                                                 onChange={(e) => handleUpdateOption(option.id, { assignment_resource_url: e.target.value })}
                                             />
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Allowed Submission Type</label>
+                                            <select
+                                                className="w-full text-sm font-medium border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border rounded-md"
+                                                value={option.allowed_submission_type || 'both'}
+                                                onChange={(e) => handleUpdateOption(option.id, { allowed_submission_type: e.target.value as any })}
+                                            >
+                                                <option value="both">Both (GitHub & File)</option>
+                                                <option value="github">GitHub Link Only</option>
+                                                <option value="file">File Upload Only</option>
+                                            </select>
                                         </div>
                                         <div className="sm:col-span-2">
                                             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Assignment PDF</label>

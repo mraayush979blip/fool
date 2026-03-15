@@ -37,6 +37,7 @@ export interface PhaseOption {
   youtube_url: string;
   assignment_file_url?: string;
   assignment_resource_url?: string;
+  allowed_submission_type?: 'github' | 'file' | 'both';
 }
 
 // Phase Interface

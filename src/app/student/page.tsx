@@ -243,7 +243,7 @@ export default function StudentDashboard() {
                                                     <h3 className="text-lg md:text-xl font-bold tracking-tight mb-1.5 group-hover:text-primary transition-colors truncate text-foreground">
                                                         {phase.title}
                                                     </h3>
-                                                    <div className="flex items-center gap-4">
+                                                    <div className="flex items-center gap-4 flex-wrap">
                                                         <span className={cn(
                                                             "text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5",
                                                             isLive ? "text-primary" : isCompleted ? "text-emerald-500" : "text-muted"
@@ -251,6 +251,13 @@ export default function StudentDashboard() {
                                                             {isLive && <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
                                                             {isPaused ? 'Paused' : isUpcoming ? 'Locked' : isCompleted ? 'Completed' : 'Enrolled'}
                                                         </span>
+                                                        
+                                                        {phase.is_mandatory && !isCompleted && submissions.has(phase.id) && (
+                                                            <span className="text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                                                <Zap className="w-2.5 h-2.5 fill-current" /> Safe
+                                                            </span>
+                                                        )}
+
                                                         <span className="h-1 w-1 rounded-full bg-card-border" />
                                                         <span className="text-[10px] font-bold text-muted">Deadline: {new Date(phase.end_date).toLocaleDateString()}</span>
                                                     </div>
