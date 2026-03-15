@@ -30,6 +30,15 @@ export interface User {
   equipped_avatar?: string;
 }
 
+// Phase Option Interface
+export interface PhaseOption {
+  id: string;
+  title: string;
+  youtube_url: string;
+  assignment_file_url?: string;
+  assignment_resource_url?: string;
+}
+
 // Phase Interface
 export interface Phase {
   id: string;
@@ -51,6 +60,8 @@ export interface Phase {
   min_seconds_required: number;
   total_assignments: number;
   bypass_time_requirement?: boolean;
+  has_multiple_options?: boolean;
+  options?: PhaseOption[];
   created_at: string;
   updated_at: string;
 }
@@ -94,6 +105,7 @@ export interface StudentPhaseActivity {
   id: string;
   student_id: string;
   phase_id: string;
+  selected_option_id?: string;
   total_time_spent_seconds: number;
   video_duration_seconds?: number;
   video_watched_seconds: number;

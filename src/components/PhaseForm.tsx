@@ -14,7 +14,7 @@ import {
     Download
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { Phase } from '@/types/database';
+import { Phase, PhaseOption } from '@/types/database';
 import { isValidFileSize, formatFileSize, isValidAssignmentFileType } from '@/utils/validation';
 import { sendEmailNotification } from '@/actions/sendEmail';
 
@@ -43,7 +43,11 @@ export default function PhaseForm({ id }: PhaseFormProps) {
         is_mandatory: true,
         min_seconds_required: 900, // Default 15 minutes
         total_assignments: 1,
+        has_multiple_options: false,
+        options: [],
     });
+
+    const [optionFiles, setOptionFiles] = useState<Record<string, File>>({});
 
     useEffect(() => {
         const fetchPhase = async () => {
@@ -125,7 +129,67 @@ export default function PhaseForm({ id }: PhaseFormProps) {
         }
     };
 
-    const handleRemoveFile = () => {
+    const handleAddOption = () => {
+        const newOption = {
+            id: Math.random().toString(36).substring(7),
+            title: '',
+            youtube_url: '',
+            assignment_file_url: '',
+            assignment_resource_url: ''
+        };
+        setFormData(prev => ({
+            ...prev,
+            options: [...(prev.options || []), newOption]
+        }));
+    };
+
+    const handleRemoveOption = (id: string) => {
+        setFormData(prev => ({
+            ...prev,
+            options: prev.options?.filter(o => o.id !== id) || []
+        }));
+        setOptionFiles(prev => {
+            const next = { ...prev };
+            delete next[id];
+            return next;
+        });
+    };
+
+    const handleUpdateOption = (id: string, updates: Partial<PhaseOption>) => {
+        setFormData(prev => ({
+            ...prev,
+            options: prev.options?.map(o => o.id === id ? { ...o, ...updates } : o) || []
+        }));
+    };
+
+    const handleOptionFileSelect = (e: React.ChangeEvent<HTMLInputElement>, optionId: string) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!isValidAssignmentFileType(file)) {
+            setError('Invalid file type. Please upload PDF, JPG, or PNG files only.');
+            return;
+        }
+
+        if (!isValidFileSize(file, 2)) {
+            setError('File size must be less than 2MB.');
+            return;
+        }
+
+        setOptionFiles(prev => ({ ...prev, [optionId]: file }));
+        setError(null);
+    };
+
+    const handleRemoveOptionFile = (optionId: string) => {
+        setOptionFiles(prev => {
+            const next = { ...prev };
+            delete next[optionId];
+            return next;
+        });
+        handleUpdateOption(optionId, { assignment_file_url: '' });
+    };
+
+    const handleRemoveMainFile = () => {
         setSelectedFile(null);
         setFormData({ ...formData, assignment_file_url: '' });
     };
@@ -153,7 +217,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
         try {
             // Upload new file if selected
             let fileUrl = formData.assignment_file_url;
-            if (selectedFile) {
+            if (selectedFile && !formData.has_multiple_options) {
                 const uploadedUrl = await handleFileUpload();
                 if (!uploadedUrl) {
                     setLoading(false);
@@ -168,9 +232,42 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                 fileUrl = uploadedUrl;
             }
 
+            // Handle Option File Uploads
+            const updatedOptions = [...(formData.options || [])];
+            if (formData.has_multiple_options) {
+                for (let i = 0; i < updatedOptions.length; i++) {
+                    const option = updatedOptions[i];
+                    const file = optionFiles[option.id];
+                    if (file) {
+                        // Temp swap selectedFile to use existing handleFileUpload
+                        const originalSelectedFile = selectedFile;
+                        setSelectedFile(file);
+                        
+                        // We need a custom upload for options or reuse logic carefully
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `option-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+                        const { error: uploadError } = await supabase.storage
+                            .from('assignment-documents')
+                            .upload(fileName, file);
+
+                        if (uploadError) throw uploadError;
+
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('assignment-documents')
+                            .getPublicUrl(fileName);
+
+                        updatedOptions[i].assignment_file_url = publicUrl;
+                        setSelectedFile(originalSelectedFile);
+                    }
+                }
+            }
+
             const dataToSave = {
                 ...formData,
-                assignment_file_url: fileUrl
+                assignment_file_url: formData.has_multiple_options ? null : fileUrl,
+                youtube_url: formData.has_multiple_options ? null : formData.youtube_url,
+                assignment_resource_url: formData.has_multiple_options ? null : formData.assignment_resource_url,
+                options: updatedOptions
             };
 
             if (id) {
@@ -315,134 +412,243 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                     </div>
 
                     <div className="sm:col-span-6 border-t border-gray-100 pt-6">
-                        <h3 className="text-lg font-medium text-gray-900 flex items-center mb-4">
-                            <Video className="mr-2 h-5 w-5 text-red-500" /> Resources
-                        </h3>
-                    </div>
-
-                    <div className="sm:col-span-6">
-                        <label htmlFor="youtube_url" className="block text-sm font-bold text-gray-700">
-                            YouTube Video URL
-                        </label>
-                        <div className="mt-1">
-                            <input
-                                type="url"
-                                name="youtube_url"
-                                id="youtube_url"
-                                placeholder="https://www.youtube.com/watch?v=..."
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
-                                value={formData.youtube_url || ''}
-                                onChange={(e) => setFormData({ ...formData, youtube_url: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="sm:col-span-6">
-                        <label htmlFor="allowed_submission_type" className="block text-sm font-bold text-gray-700">
-                            Allowed Submission Type
-                        </label>
-                        <div className="mt-1">
-                            <select
-                                id="allowed_submission_type"
-                                name="allowed_submission_type"
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
-                                value={formData.allowed_submission_type || 'both'}
-                                onChange={(e) => setFormData({ ...formData, allowed_submission_type: e.target.value as 'github' | 'file' | 'both' })}
+                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-900">Multiple Content Options</h3>
+                                <p className="text-xs text-gray-500">Provide different videos/assignments for students to choose from.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, has_multiple_options: !formData.has_multiple_options })}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ring-2 ring-transparent ring-offset-2 ${formData.has_multiple_options ? 'bg-indigo-600' : 'bg-gray-200'}`}
                             >
-                                <option value="both">Both (GitHub Link & File Upload)</option>
-                                <option value="github">GitHub Link Only</option>
-                                <option value="file">File Upload Only</option>
-                            </select>
+                                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.has_multiple_options ? 'translate-x-5' : 'translate-x-0'}`} />
+                            </button>
                         </div>
-                        <p className="mt-1 text-xs text-gray-500">Choose how students are allowed to submit their work for this phase.</p>
                     </div>
 
-                    <div className="sm:col-span-6">
-                        <label className="block text-sm font-bold text-gray-700">
-                            Assignment Document (PDF or Image)
-                        </label>
-                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors bg-gray-50">
-                            <div className="space-y-1 text-center">
-                                {formData.assignment_file_url || selectedFile ? (
-                                    <div className="flex flex-col items-center">
-                                        <FileText className="mx-auto h-12 w-12 text-blue-500" />
-                                        <div className="mt-4 flex text-sm text-gray-600">
-                                            <p className="font-medium text-blue-600 truncate max-w-xs">
-                                                {selectedFile ? selectedFile.name : formData.assignment_file_url?.split('/').pop()}
-                                            </p>
-                                        </div>
-                                        {selectedFile && (
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                {formatFileSize(selectedFile.size)} (Pending Upload)
-                                            </p>
+                    {!formData.has_multiple_options ? (
+                        <>
+                            <div className="sm:col-span-6 border-t border-gray-100 pt-6">
+                                <h3 className="text-lg font-medium text-gray-900 flex items-center mb-4">
+                                    <Video className="mr-2 h-5 w-5 text-red-500" /> Default Content
+                                </h3>
+                            </div>
+
+                            <div className="sm:col-span-6">
+                                <label htmlFor="youtube_url" className="block text-sm font-bold text-gray-700">
+                                    YouTube Video URL
+                                </label>
+                                <div className="mt-1">
+                                    <input
+                                        type="url"
+                                        name="youtube_url"
+                                        id="youtube_url"
+                                        placeholder="https://www.youtube.com/watch?v=..."
+                                        className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
+                                        value={formData.youtube_url || ''}
+                                        onChange={(e) => setFormData({ ...formData, youtube_url: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="sm:col-span-6">
+                                <label className="block text-sm font-bold text-gray-700">
+                                    Assignment Document (PDF or Image)
+                                </label>
+                                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors bg-gray-50">
+                                    <div className="space-y-1 text-center">
+                                        {formData.assignment_file_url || selectedFile ? (
+                                            <div className="flex flex-col items-center">
+                                                <FileText className="mx-auto h-12 w-12 text-blue-500" />
+                                                <div className="mt-4 flex text-sm text-gray-600">
+                                                    <p className="font-medium text-blue-600 truncate max-w-xs">
+                                                        {selectedFile ? selectedFile.name : formData.assignment_file_url?.split('/').pop()}
+                                                    </p>
+                                                </div>
+                                                {selectedFile && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        {formatFileSize(selectedFile.size)} (Pending Upload)
+                                                    </p>
+                                                )}
+                                                <div className="mt-4 flex space-x-4">
+                                                    {formData.assignment_file_url && !selectedFile && (
+                                                        <a
+                                                            href={formData.assignment_file_url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                        >
+                                                            <Download className="mr-1.5 h-4 w-4 text-gray-400" />
+                                                            View Current
+                                                        </a>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleRemoveMainFile}
+                                                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                                    >
+                                                        <X className="mr-1.5 h-4 w-4" />
+                                                        Remove/Replace
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                                                <div className="flex text-sm text-gray-600 justify-center">
+                                                    <label
+                                                        htmlFor="file-upload"
+                                                        className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                                                    >
+                                                        <span>Upload a file</span>
+                                                        <input
+                                                            id="file-upload"
+                                                            name="file-upload"
+                                                            type="file"
+                                                            className="sr-only"
+                                                            accept=".pdf,image/png,image/jpeg,image/jpg"
+                                                            onChange={handleFileSelect}
+                                                        />
+                                                    </label>
+                                                    <p className="pl-1">or drag and drop</p>
+                                                </div>
+                                                <p className="text-xs text-gray-500">
+                                                    PDF, PNG, JPG up to 2MB
+                                                </p>
+                                            </>
                                         )}
-                                        <div className="mt-4 flex space-x-4">
-                                            {formData.assignment_file_url && !selectedFile && (
-                                                <a
-                                                    href={formData.assignment_file_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                >
-                                                    <Download className="mr-1.5 h-4 w-4 text-gray-400" />
-                                                    View Current
-                                                </a>
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={handleRemoveFile}
-                                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                            >
-                                                <X className="mr-1.5 h-4 w-4" />
-                                                Remove/Replace
-                                            </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="sm:col-span-6">
+                                <label htmlFor="assignment_resource_url" className="block text-sm font-bold text-gray-700">
+                                    Additional Resource URL (Optional)
+                                </label>
+                                <div className="mt-1">
+                                    <input
+                                        type="url"
+                                        name="assignment_resource_url"
+                                        id="assignment_resource_url"
+                                        placeholder="Link to project boilerplate or instructions"
+                                        className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
+                                        value={formData.assignment_resource_url || ''}
+                                        onChange={(e) => setFormData({ ...formData, assignment_resource_url: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="sm:col-span-6 space-y-6">
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                <h3 className="text-lg font-medium text-gray-900">Content Options</h3>
+                                <button
+                                    type="button"
+                                    onClick={handleAddOption}
+                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-bold rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+                                >
+                                    + Add New Option
+                                </button>
+                            </div>
+
+                            {formData.options?.map((option, index) => (
+                                <div key={option.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveOption(option.id)}
+                                        className="absolute top-4 right-4 p-1 text-slate-400 hover:text-red-500 transition-colors"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">Option {index + 1}</span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="sm:col-span-2">
+                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Option Title</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Solution using Python"
+                                                className="w-full text-sm font-medium border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border rounded-md"
+                                                value={option.title}
+                                                onChange={(e) => handleUpdateOption(option.id, { title: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">YouTube Video URL</label>
+                                            <input
+                                                type="url"
+                                                placeholder="YouTube Link"
+                                                className="w-full text-sm font-medium border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border rounded-md"
+                                                value={option.youtube_url}
+                                                onChange={(e) => handleUpdateOption(option.id, { youtube_url: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Resource URL (Optional)</label>
+                                            <input
+                                                type="url"
+                                                placeholder="GitHub or External Link"
+                                                className="w-full text-sm font-medium border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border rounded-md"
+                                                value={option.assignment_resource_url}
+                                                onChange={(e) => handleUpdateOption(option.id, { assignment_resource_url: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Assignment PDF</label>
+                                            <div className="flex items-center gap-4 mt-1">
+                                                {(option.assignment_file_url || optionFiles[option.id]) ? (
+                                                    <div className="flex items-center justify-between flex-1 p-3 bg-white border border-slate-200 rounded-xl">
+                                                        <div className="flex items-center gap-3">
+                                                            <FileText className="h-5 w-5 text-indigo-500" />
+                                                            <span className="text-xs font-bold truncate max-w-[200px]">
+                                                                {optionFiles[option.id] ? optionFiles[option.id].name : option.assignment_file_url?.split('/').pop()}
+                                                            </span>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveOptionFile(option.id)}
+                                                            className="text-red-500 hover:text-red-700 text-xs font-bold"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <label className="flex-1 flex items-center justify-center p-3 border-2 border-dashed border-slate-300 rounded-xl hover:border-indigo-400 cursor-pointer transition-colors bg-white">
+                                                        <Upload className="h-4 w-4 text-slate-400 mr-2" />
+                                                        <span className="text-xs font-bold text-slate-500">Upload PDF</span>
+                                                        <input
+                                                            type="file"
+                                                            className="hidden"
+                                                            accept=".pdf,image/png,image/jpeg,image/jpg"
+                                                            onChange={(e) => handleOptionFileSelect(e, option.id)}
+                                                        />
+                                                    </label>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                ) : (
-                                    <>
-                                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                                        <div className="flex text-sm text-gray-600 justify-center">
-                                            <label
-                                                htmlFor="file-upload"
-                                                className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                                            >
-                                                <span>Upload a file</span>
-                                                <input
-                                                    id="file-upload"
-                                                    name="file-upload"
-                                                    type="file"
-                                                    className="sr-only"
-                                                    accept=".pdf,image/png,image/jpeg,image/jpg"
-                                                    onChange={handleFileSelect}
-                                                />
-                                            </label>
-                                            <p className="pl-1">or drag and drop</p>
-                                        </div>
-                                        <p className="text-xs text-gray-500">
-                                            PDF, PNG, JPG up to 2MB
-                                        </p>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                                </div>
+                            ))}
 
-                    <div className="sm:col-span-6">
-                        <label htmlFor="assignment_resource_url" className="block text-sm font-bold text-gray-700">
-                            Additional Resource URL (Optional)
-                        </label>
-                        <div className="mt-1">
-                            <input
-                                type="url"
-                                name="assignment_resource_url"
-                                id="assignment_resource_url"
-                                placeholder="Link to project boilerplate or instructions"
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
-                                value={formData.assignment_resource_url || ''}
-                                onChange={(e) => setFormData({ ...formData, assignment_resource_url: e.target.value })}
-                            />
+                            {(!formData.options || formData.options.length === 0) && (
+                                <div className="text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                                    <Video className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No options added yet</p>
+                                    <button
+                                        type="button"
+                                        onClick={handleAddOption}
+                                        className="mt-4 text-indigo-600 font-bold text-xs"
+                                    >
+                                        + Click to add your first option
+                                    </button>
+                                </div>
+                            )}
                         </div>
-                    </div>
+                    )}
 
                     <div className="sm:col-span-6">
                         <label htmlFor="min_seconds_required" className="block text-sm font-bold text-gray-700">

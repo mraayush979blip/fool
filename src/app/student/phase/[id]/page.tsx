@@ -59,6 +59,8 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
     }>>({});
     const [success, setSuccess] = useState<string | null>(null);
     const [isVideoStarted, setIsVideoStarted] = useState(false);
+    const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+    const [isSelectingOption, setIsSelectingOption] = useState(false);
 
     // --- Data Fetching (React Query) ---
 
@@ -74,7 +76,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
             const { data, error } = await supabase
                 .from('phases')
-                .select('id, phase_number, title, description, youtube_url, assignment_file_url, assignment_resource_url, allowed_submission_type, start_date, end_date, is_paused, bypass_time_requirement, min_seconds_required, total_assignments')
+                .select('id, phase_number, title, description, youtube_url, assignment_file_url, assignment_resource_url, allowed_submission_type, start_date, end_date, is_paused, bypass_time_requirement, min_seconds_required, total_assignments, has_multiple_options, options')
                 .eq('id', id)
                 .single();
 
@@ -111,7 +113,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         queryFn: async () => {
             const { data } = await supabase
                 .from('student_phase_activity')
-                .select('total_time_spent_seconds, video_completed')
+                .select('total_time_spent_seconds, video_completed, selected_option_id')
                 .eq('phase_id', id)
                 .eq('student_id', user?.id)
                 .single();
@@ -126,6 +128,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
             setTimeSpent(activityData.total_time_spent_seconds || 0);
             timeSpentRef.current = activityData.total_time_spent_seconds || 0;
             setVideoCompleted(activityData.video_completed || false);
+            setSelectedOptionId(activityData.selected_option_id || null);
         }
     }, [activityData]);
 
@@ -439,6 +442,42 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         return (match && match[2].length === 11) ? match[2] : null;
     };
 
+    const handleSelectOption = async (optionId: string) => {
+        if (!user || !id) return;
+        setIsSelectingOption(true);
+        try {
+            const { data: existing } = await supabase
+                .from('student_phase_activity')
+                .select('id')
+                .eq('phase_id', id)
+                .eq('student_id', user.id)
+                .single();
+
+            if (existing) {
+                await supabase
+                    .from('student_phase_activity')
+                    .update({ selected_option_id: optionId })
+                    .eq('id', existing.id);
+            } else {
+                await supabase
+                    .from('student_phase_activity')
+                    .insert({
+                        phase_id: id,
+                        student_id: user.id,
+                        selected_option_id: optionId,
+                        total_time_spent_seconds: 0,
+                        video_watched_seconds: 0
+                    });
+            }
+            setSelectedOptionId(optionId);
+            queryClient.invalidateQueries({ queryKey: ['activity', id, user.id] });
+        } catch (err) {
+            console.error('Error selecting option:', err);
+        } finally {
+            setIsSelectingOption(false);
+        }
+    };
+
     // --- Render Helpers ---
 
     if (phaseLoading) {
@@ -467,7 +506,65 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         );
     }
 
-    const videoId = extractVideoId(phase.youtube_url);
+    const selectedOption = phase.has_multiple_options 
+        ? phase.options?.find((o: any) => o.id === selectedOptionId)
+        : null;
+
+    const currentYoutubeUrl = phase.has_multiple_options ? selectedOption?.youtube_url : phase.youtube_url;
+    const currentAssignmentFileUrl = phase.has_multiple_options ? selectedOption?.assignment_file_url : phase.assignment_file_url;
+    const currentAssignmentResourceUrl = phase.has_multiple_options ? selectedOption?.assignment_resource_url : phase.assignment_resource_url;
+
+    if (phase.has_multiple_options && !selectedOptionId) {
+        return (
+            <div className="max-w-4xl mx-auto px-6 py-12 space-y-10">
+                <Link href="/student" className="inline-flex items-center gap-2 text-muted hover:text-primary transition-colors mb-8">
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="text-sm font-bold">Back to Dashboard</span>
+                </Link>
+
+                <div className="text-center space-y-4">
+                    <h1 className="text-3xl md:text-5xl font-black tracking-tight text-foreground">Select Your Study Path</h1>
+                    <p className="text-muted text-lg max-w-2xl mx-auto">This phase offers multiple specialized video lessons and assignments. Please choose the one that best suits your current learning needs.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
+                    {phase.options?.map((option: any) => (
+                        <motion.button
+                            key={option.id}
+                            whileHover={{ y: -5 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleSelectOption(option.id)}
+                            disabled={isSelectingOption}
+                            className="bg-card p-8 rounded-[2rem] border border-card-border shadow-sm hover:border-primary/30 text-left transition-all group relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors" />
+                            
+                            <div className="relative space-y-4">
+                                <div className="p-4 bg-primary/10 rounded-2xl w-fit">
+                                    <Video className="w-6 h-6 text-primary" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{option.title}</h3>
+                                    <p className="text-sm font-medium text-muted line-clamp-2">Complete the specialized assignment and video lesson for this track.</p>
+                                </div>
+                                <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-primary pt-4 group-hover:translate-x-1 transition-transform">
+                                    Select Path <Zap className="ml-2 w-3.5 h-3.5 fill-current" />
+                                </div>
+                            </div>
+                        </motion.button>
+                    ))}
+                </div>
+
+                {isSelectingOption && (
+                    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    const videoId = extractVideoId(currentYoutubeUrl || '');
 
     return (
         <div className="max-w-7xl mx-auto px-6 py-8 space-y-10 font-sans text-foreground">
@@ -535,10 +632,10 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                                 Engineering Resources
                             </h2>
                         </div>
-                        {phase.assignment_file_url || phase.assignment_resource_url ? (
+                        {phase.assignment_file_url || phase.assignment_resource_url || currentAssignmentFileUrl || currentAssignmentResourceUrl ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <button
-                                    onClick={(e) => handleDownloadAssignment(e, phase.assignment_file_url || phase.assignment_resource_url)}
+                                    onClick={(e) => handleDownloadAssignment(e, currentAssignmentFileUrl || currentAssignmentResourceUrl || '')}
                                     className="flex items-center justify-between p-5 bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 transition-all group"
                                 >
                                     <div className="flex items-center gap-4">
