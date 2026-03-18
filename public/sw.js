@@ -1,65 +1,76 @@
-const CACHE_VERSION = 'levelone-v2.4';
+const CACHE_VERSION = 'levelone-v2.5';
+const CACHE_NAME = `levelone-cache-${CACHE_VERSION}`;
 
-self.addEventListener('install', (e) => {
-    // Activate immediately without waiting for old SW
+/**
+ * Levelone Service Worker
+ * Strategy: Network-First with Stale-While-Revalidate fallback.
+ * CRITICAL: Bypasses all POST requests to ensure Next.js Server Actions 
+ * and Supabase mutations work without 405 errors.
+ */
+
+// Install Event
+self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-self.addEventListener('activate', (e) => {
-    e.waitUntil(
-        // Clean up old caches from previous versions
-        caches.keys().then(keys => {
+// Activate Event
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
             return Promise.all(
-                keys
-                    .filter(key => key !== CACHE_VERSION)
-                    .map(key => {
-                        console.log('[SW] Cleaning old cache:', key);
-                        return caches.delete(key);
-                    })
+                cacheNames.map((cacheName) => {
+                    if (cacheName !== CACHE_NAME) {
+                        return caches.delete(cacheName);
+                    }
+                })
             );
         }).then(() => self.clients.claim())
     );
 });
 
+// Fetch Event
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // Only handle same-origin requests
-    if (url.origin !== location.origin) return;
+    // 1. BYPASS Strategy: Skip all POST, PUT, DELETE requests (Next.js Server Actions)
+    if (request.method !== 'GET') return;
 
-    // Network-first for HTML pages and API calls (always fresh)
-    if (request.mode === 'navigate' || url.pathname.startsWith('/api/')) {
+    // 2. BYPASS Strategy: Skip chrome-extension, internal, and specific API urls
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+    if (url.pathname.startsWith('/api/')) return;
+
+    // 3. NETWORK-FIRST Strategy: For HTML/Next.js pages/navigates
+    if (request.mode === 'navigate') {
         event.respondWith(
             fetch(request).catch(() => caches.match(request))
         );
         return;
     }
 
-    // Cache-first for static assets (JS, CSS, images, fonts)
+    // 4. STALE-WHILE-REVALIDATE Strategy: For static assets (JS, CSS, images)
     if (
         url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|webp|woff2?|ico)$/) ||
         url.pathname.startsWith('/_next/static/')
     ) {
         event.respondWith(
-            caches.match(request).then(cached => {
-                if (cached) return cached;
-                return fetch(request).then(response => {
-                    // Only cache successful responses
-                    if (response.ok) {
-                        const clone = response.clone();
-                        caches.open(CACHE_VERSION).then(cache => {
-                            cache.put(request, clone);
-                        });
-                    }
-                    return response;
+            caches.open(CACHE_NAME).then((cache) => {
+                return cache.match(request).then((cachedResponse) => {
+                    const fetchedResponse = fetch(request).then((networkResponse) => {
+                        if (networkResponse.ok && networkResponse.status === 200) {
+                            cache.put(request, networkResponse.clone());
+                        }
+                        return networkResponse;
+                    }).catch(() => null);
+
+                    return cachedResponse || fetchedResponse;
                 });
             })
         );
         return;
     }
 
-    // Default: network-first for everything else
+    // 5. DEFAULT: Network-first
     event.respondWith(
         fetch(request).catch(() => caches.match(request))
     );
