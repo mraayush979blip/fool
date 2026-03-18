@@ -44,93 +44,19 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // AUTO-SYNC VERSION: 2.4.0 (PWA-aware)
               (function() {
-                const CURRENT_DEPLOY = "2.4.0-pwa";
-                const lastSync = localStorage.getItem("levelone_last_sync_v4");
-                
-                function registerSW() {
-                  if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('/sw.js')
-                      .then(function(reg) { console.log('✅ [SW] Registered:', reg.scope); })
-                      .catch(function(err) { console.warn('⚠️ [SW] Registration failed:', err); });
+                function hE(e) {
+                  var m = (e.message || (e.reason && e.reason.message) || '').toLowerCase();
+                  if (m.includes('chunkloaderror') || m.includes('failed to fetch dynamically imported module') || m.includes('unexpected token \\'<\\'')) {
+                    if (sessionStorage.getItem('lv1_sync') === '1') return;
+                    sessionStorage.setItem('lv1_sync', '1');
+                    var u = new URL(window.location.href);
+                    u.searchParams.set('sync', Date.now().toString());
+                    window.location.href = u.toString();
                   }
                 }
-                
-                if (lastSync !== CURRENT_DEPLOY) {
-                  console.log("🚀 [Sync] Update detected, refreshing caches...");
-                  
-                  // 1. Unregister old service workers
-                  if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.getRegistrations().then(regs => {
-                      for(let reg of regs) reg.unregister();
-                    }).catch(() => {});
-                  }
-                  
-                  // 2. Purge old caches
-                  if ('caches' in window) {
-                    caches.keys().then(keys => {
-                      for(let key of keys) caches.delete(key);
-                    }).catch(() => {});
-                  }
-                  
-                  // 3. Set marker (don't clear all localStorage anymore — preserves user prefs)
-                  localStorage.setItem("levelone_last_sync_v4", CURRENT_DEPLOY);
-                  
-                  // 4. Re-register fresh SW after cleanup
-                  setTimeout(registerSW, 2000);
-                } else {
-                  // Normal load — ensure SW is registered
-                  registerSW();
-                }
-              })();
-            `
-          }}
-        />
-        {/* ChunkLoadError Recovery — auto-recovers from stale chunk failures after deploys */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                function handleChunkError(e) {
-                  var msg = (e.message || e.reason && e.reason.message || '').toLowerCase();
-                  if (
-                    msg.includes('chunkloaderror') ||
-                    msg.includes('loading chunk') ||
-                    msg.includes('failed to fetch dynamically imported module') ||
-                    msg.includes('importing a module script failed')
-                  ) {
-                    var key = 'levelone_chunk_reload';
-                    var last = localStorage.getItem(key);
-                    var now = Date.now();
-                    
-                    if (last && (now - parseInt(last, 10)) < 10000) {
-                      // Persistent failure — nuclear cleanup
-                      console.error('[Levelone] Persistent chunk error. Clearing all caches...');
-                      sessionStorage.clear();
-                      localStorage.removeItem(key);
-                      if ('caches' in window) {
-                        caches.keys().then(function(keys) {
-                          keys.forEach(function(k) { caches.delete(k); });
-                        });
-                      }
-                      if ('serviceWorker' in navigator) {
-                        navigator.serviceWorker.getRegistrations().then(function(regs) {
-                          regs.forEach(function(r) { r.unregister(); });
-                        });
-                      }
-                    } else {
-                      // First failure — quick reload
-                      console.warn('[Levelone] Chunk load error detected. Reloading...');
-                      localStorage.setItem(key, now.toString());
-                      window.location.reload();
-                    }
-                  }
-                }
-                window.addEventListener('error', handleChunkError);
-                window.addEventListener('unhandledrejection', function(e) {
-                  handleChunkError({ message: (e.reason && e.reason.message) || '' });
-                });
+                window.addEventListener('error', hE, true);
+                window.addEventListener('unhandledrejection', function(e) { hE(e); });
               })();
             `
           }}
