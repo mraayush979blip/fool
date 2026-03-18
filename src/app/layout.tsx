@@ -4,9 +4,11 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from 'sonner';
 import VersionCheck from "@/components/VersionCheck";
+import PWADriver from "@/components/PWADriver";
 import NotificationListener from "@/components/NotificationListener";
 import QueryProvider from "@/components/QueryProvider";
 import { Suspense } from 'react';
+import VercelAnalytics from "@/components/VercelAnalytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,8 +27,6 @@ export const metadata: Metadata = {
   title: "Levelone",
   description: "Phase-Based Learning Management System - sab ka sath sab vikas",
 };
-
-import VercelAnalytics from "@/components/VercelAnalytics";
 
 export default function RootLayout({
   children,
@@ -77,6 +77,7 @@ export default function RootLayout({
                 </div>
             }>
               <VersionCheck />
+              <PWADriver />
               <NotificationListener />
               {children}
             </Suspense>
