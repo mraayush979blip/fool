@@ -26,6 +26,8 @@ export const metadata: Metadata = {
   description: "Phase-Based Learning Management System - sab ka sath sab vikas",
 };
 
+import VercelAnalytics from "@/components/VercelAnalytics";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,6 +36,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Force fresh builds and purge Edge caches */}
+        <meta name="build-id" content={Date.now().toString()} />
         <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="theme-color" content="#3b82f6" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
@@ -76,6 +80,7 @@ export default function RootLayout({
               <NotificationListener />
               {children}
             </Suspense>
+            <VercelAnalytics />
             <Toaster richColors position="top-center" />
           </AuthProvider>
         </QueryProvider>
