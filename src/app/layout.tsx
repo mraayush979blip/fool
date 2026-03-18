@@ -6,6 +6,7 @@ import { Toaster } from 'sonner';
 import VersionCheck from "@/components/VersionCheck";
 import NotificationListener from "@/components/NotificationListener";
 import QueryProvider from "@/components/QueryProvider";
+import { Suspense } from 'react';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,6 +17,9 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Levelone",
@@ -137,9 +141,15 @@ export default function RootLayout({
       >
         <QueryProvider>
           <AuthProvider>
-            <VersionCheck />
-            <NotificationListener />
-            {children}
+            <Suspense fallback={
+                <div className="fixed inset-0 flex items-center justify-center bg-background z-[9999]">
+                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+            }>
+              <VersionCheck />
+              <NotificationListener />
+              {children}
+            </Suspense>
             <Toaster richColors position="top-center" />
           </AuthProvider>
         </QueryProvider>
