@@ -1,7 +1,12 @@
 'use client';
 
 import ProtectedRoute from '@/components/ProtectedRoute';
-import AdminSidebar from '@/components/AdminSidebar';
+import dynamic from 'next/dynamic';
+
+const AdminSidebar = dynamic(() => import('@/components/AdminSidebar'), {
+    ssr: false,
+    loading: () => <div className="w-64 bg-white border-r border-gray-200 hidden md:block" />
+});
 
 export default function AdminLayout({
     children,
@@ -21,3 +26,4 @@ export default function AdminLayout({
         </ProtectedRoute>
     );
 }
+

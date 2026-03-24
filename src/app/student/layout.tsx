@@ -1,16 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 import { Trophy, ShoppingBag, Sparkles, LayoutDashboard, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import InstallPWA from '@/components/InstallPWA';
-import NavigationMenu from '@/components/NavigationMenu';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const NavigationMenu = dynamic(() => import('@/components/NavigationMenu'), { ssr: false });
+const InstallPWA = dynamic(() => import('@/components/InstallPWA'), { ssr: false });
+
 
 export default function StudentLayout({
     children,
