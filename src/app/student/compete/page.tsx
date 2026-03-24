@@ -53,9 +53,12 @@ export default function CompetePage() {
             try {
                 if (user) {
                     await supabase.rpc('update_student_streak', { student_uuid: user.id });
-                    const { data: ubData } = await supabase.from('user_badges').select('*').eq('user_id', user.id);
+                    const { data: ubData, error: ubError } = await supabase.from('user_badges').select('*').eq('user_id', user.id);
+                    if (ubError) console.error('❌ [Compete] User Badges Fetch Error:', ubError);
                     setUserBadges(ubData || []);
-                    const { data: rankData } = await supabase.rpc('get_student_rank_context', { current_student_id: user.id });
+
+                    const { data: rankData, error: rankError } = await supabase.rpc('get_student_rank_context', { current_student_id: user.id });
+                    if (rankError) console.error('❌ [Compete] Student Rank Context RPC Error:', rankError);
                     setRankContext(rankData);
                 }
 
@@ -63,7 +66,10 @@ export default function CompetePage() {
                 setBadges(bData || []);
 
                 const { data: lbData, error: lbError } = await supabase.rpc('get_leaderboard_v2');
-                if (lbError) throw lbError;
+                if (lbError) {
+                    console.error('❌ [Compete] Leaderboard RPC Error:', lbError);
+                    throw lbError;
+                }
 
                 const processedLB = (lbData || []).map((entry: any) => ({
                     id: entry.user_id,
@@ -88,8 +94,15 @@ export default function CompetePage() {
                     setPhaseStats(stats);
                 }
             } catch (error: any) {
-                console.error('❌ [Compete] Global Fetch Error:', error);
+                console.error('❌ [Compete] Global Fetch Error:', {
+                    message: error.message || 'Unknown error',
+                    details: error.details || 'No details',
+                    hint: error.hint || 'No hint',
+                    code: error.code || 'No code',
+                    error: error
+                });
             } finally {
+
                 setLoading(false);
             }
         };
