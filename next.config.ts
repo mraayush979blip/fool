@@ -31,9 +31,6 @@ const nextConfig: NextConfig = {
   // Ensure we can build without errors during rapid deployment
   typescript: {
     ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
   }
 };
 
