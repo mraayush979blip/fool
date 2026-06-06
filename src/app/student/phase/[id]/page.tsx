@@ -69,7 +69,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
     // 1. Fetch Phase Data
     const { data: phase, isLoading: phaseLoading } = useQuery({
-        queryKey: ['phase', id],
+        queryKey: ['phase', id, user?.id],
         queryFn: async () => {
             const { data: isRevoked } = await supabase.rpc('check_and_revoke_self');
             if (isRevoked) {
@@ -85,16 +85,22 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
             if (error) throw error;
 
-            const { data: extData } = await supabase
+            // Fetch the most recent active extension for this student across ALL phases
+            // Extensions are student-wide: today + N days grants access to submit any phase
+            const { data: extRows } = await supabase
                 .from('phase_extensions')
                 .select('extended_deadline')
-                .eq('phase_id', id)
                 .eq('student_id', user?.id)
-                .maybeSingle();
+                .order('extended_deadline', { ascending: false })
+                .limit(1);
 
             const phaseData = data as any;
-            if (extData) {
-                phaseData.extended_deadline = extData.extended_deadline;
+            if (extRows && extRows.length > 0) {
+                const latestDeadline = extRows[0].extended_deadline;
+                // Only apply extension if it's still in the future
+                if (new Date(latestDeadline) > new Date()) {
+                    phaseData.extended_deadline = latestDeadline;
+                }
             }
 
             const status = getPhaseStatus(data.start_date, data.end_date, data.is_paused);
@@ -105,7 +111,8 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
             return phaseData;
         },
         enabled: !!id && !!user,
-        staleTime: 5 * 60 * 1000,
+        staleTime: 0,
+        refetchOnMount: 'always',
     });
 
     // 2. Fetch Submissions
@@ -267,9 +274,14 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
     // --- Derived State ---
     const isPastDeadline = phase ? (() => {
         const now = new Date();
-        const endDate = new Date(phase.extended_deadline || phase.end_date);
-        endDate.setHours(23, 59, 59, 999);
-        return now > endDate;
+        const deadline = phase.extended_deadline
+            ? new Date(phase.extended_deadline)
+            : (() => {
+                const d = new Date(phase.end_date);
+                d.setHours(23, 59, 59, 999);
+                return d;
+            })();
+        return now > deadline;
     })() : false;
 
     // --- Handlers ---

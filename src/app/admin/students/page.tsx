@@ -91,11 +91,15 @@ export default function StudentListPage() {
 
                 if (error) throw error;
 
-                await supabase.from('activity_logs').insert({
-                    student_id: student.id,
-                    phase_id: '00000000-0000-0000-0000-000000000000',
-                    activity_type: 'ACCESS_REVOKED',
-                    payload: { admin_id: (await supabase.auth.getUser()).data.user?.id }
+                // Fire-and-forget: log the revoke action (don't block on failure)
+                supabase.auth.getUser().then(({ data }) => {
+                    supabase.from('activity_logs').insert({
+                        student_id: student.id,
+                        activity_type: 'ACCESS_REVOKED',
+                        payload: { admin_id: data.user?.id }
+                    }).then(({ error: logErr }) => {
+                        if (logErr) console.warn('Activity log failed (non-critical):', logErr.message);
+                    });
                 });
             }
 
