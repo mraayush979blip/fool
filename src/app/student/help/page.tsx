@@ -108,7 +108,7 @@ export default function AIHelpPage() {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-background font-sans">
+        <div className="fixed inset-0 flex flex-col bg-background font-sans">
             {/* Header */}
             <header className="flex-shrink-0 z-30 bg-card border-b border-card-border px-6 py-4 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-4 text-foreground">
