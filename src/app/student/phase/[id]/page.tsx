@@ -90,7 +90,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 .select('extended_deadline')
                 .eq('phase_id', id)
                 .eq('student_id', user?.id)
-                .single();
+                .maybeSingle();
 
             const phaseData = data as any;
             if (extData) {
@@ -128,10 +128,10 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         queryFn: async () => {
             const { data } = await supabase
                 .from('student_phase_activity')
-                .select('total_time_spent_seconds, video_completed, selected_option_id')
+                .select('total_time_spent_seconds, video_watched_seconds, video_completed, selected_option_id')
                 .eq('phase_id', id)
                 .eq('student_id', user?.id)
-                .single();
+                .maybeSingle();
             return data;
         },
         enabled: !!id && !!user,
@@ -475,7 +475,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 .select('id')
                 .eq('phase_id', id)
                 .eq('student_id', user.id)
-                .single();
+                .maybeSingle();
 
             if (existing) {
                 await supabase
@@ -606,7 +606,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
                         {videoId ? (
                             <div className="p-2 md:p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
-                                <PremiumPlayer videoId={videoId} />
+                                <PremiumPlayer videoId={videoId} phaseId={id} studentId={user?.id || ''} initialProgress={activityData?.video_watched_seconds || 0} />
                             </div>
                         ) : (
                             <div className="aspect-video bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center text-slate-400 border-t border-slate-200 dark:border-slate-800">

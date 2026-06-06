@@ -1,101 +1,131 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Loader2, Maximize, Settings, Volume2 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import _ReactPlayer from 'react-player';
+const ReactPlayer = _ReactPlayer as any;
+import { Play, Loader2, RotateCcw, Clock } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface PremiumPlayerProps {
     videoId: string;
+    phaseId: string;
+    studentId: string;
+    initialProgress: number;
     onComplete?: () => void;
 }
 
-export default function PremiumPlayer({ videoId, onComplete }: PremiumPlayerProps) {
+export default function PremiumPlayer({ videoId, phaseId, studentId, initialProgress, onComplete }: PremiumPlayerProps) {
     const [isPlaying, setIsPlaying] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isReady, setIsReady] = useState(false);
+    const [showResumePrompt, setShowResumePrompt] = useState(initialProgress > 5); // Only prompt if > 5 secs
+    const [startAtTime, setStartAtTime] = useState<number | null>(null);
+    const playerRef = useRef<any>(null);
+    const lastSavedTimeRef = useRef(initialProgress);
+
+    // Format seconds to mm:ss
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
+    const handleStart = (resume: boolean) => {
+        setShowResumePrompt(false);
+        setIsPlaying(true);
+        if (resume) {
+            setStartAtTime(initialProgress);
+        }
+    };
+
+    const handleReady = () => {
+        setIsReady(true);
+        if (startAtTime !== null && playerRef.current) {
+            playerRef.current.seekTo(startAtTime, 'seconds');
+            setStartAtTime(null); // Clear after seeking
+        }
+    };
+
+    const handleProgress = async (state: any) => {
+        // Save progress every 10 seconds
+        if (Math.abs(state.playedSeconds - lastSavedTimeRef.current) >= 10) {
+            lastSavedTimeRef.current = state.playedSeconds;
+            try {
+                await supabase
+                    .from('student_phase_activity')
+                    .update({ video_watched_seconds: Math.floor(state.playedSeconds) })
+                    .eq('phase_id', phaseId)
+                    .eq('student_id', studentId);
+            } catch (err) {
+                console.error("Failed to save video progress", err);
+            }
+        }
+    };
 
     return (
-        <div className="relative group aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/10 ring-1 ring-white/5">
-            <AnimatePresence>
-                {!isPlaying && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-20 cursor-pointer overflow-hidden"
-                        onClick={() => setIsPlaying(true)}
-                    >
-                        {/* Background Thumbnail with Blur Effect */}
-                        <Image
-                            src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
-                            alt="Premium Preview"
-                            fill
-                            className="object-cover transition-transform duration-700 group-hover:scale-105"
-                            unoptimized
-                        />
-
-                        {/* Glassmorphic Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
-                            <motion.div
-                                whileHover={{ scale: 1.1, rotate: 5 }}
-                                whileTap={{ scale: 0.9 }}
-                                className="w-24 h-24 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 flex items-center justify-center shadow-[0_0_50px_rgba(255,255,255,0.1)] group-hover:shadow-[0_0_80px_rgba(59,130,246,0.3)] group-hover:bg-blue-600/20 group-hover:border-blue-400/50 transition-all duration-500"
-                            >
-                                <div className="ml-2">
-                                    <Play className="h-10 w-10 text-white fill-white" />
-                                </div>
-                            </motion.div>
+        <div className="relative group aspect-video rounded-xl overflow-hidden bg-black border border-slate-200 dark:border-slate-800 shadow-md">
+            {showResumePrompt ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-30 text-white">
+                    <Clock className="w-12 h-12 mb-4 text-blue-400 opacity-80" />
+                    <h3 className="text-xl font-bold mb-2">Resume Video?</h3>
+                    <p className="text-slate-400 mb-6 text-sm">You left off at {formatTime(initialProgress)}</p>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => handleStart(false)}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-slate-700 hover:bg-slate-800 transition-colors text-sm font-bold"
+                        >
+                            <RotateCcw className="w-4 h-4" /> Start Over
+                        </button>
+                        <button
+                            onClick={() => handleStart(true)}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 transition-colors text-sm font-bold"
+                        >
+                            <Play className="w-4 h-4 fill-current" /> Resume
+                        </button>
+                    </div>
+                </div>
+            ) : !isPlaying ? (
+                <div 
+                    className="absolute inset-0 z-20 cursor-pointer group"
+                    onClick={() => handleStart(false)}
+                >
+                    <img
+                        src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+                        alt="Video Preview"
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/10 transition-colors">
+                        <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                            <Play className="w-8 h-8 text-white fill-white ml-1" />
                         </div>
+                    </div>
+                </div>
+            ) : null}
 
-                        {/* Video Info Badge */}
-                        <div className="absolute top-6 left-6 flex items-center space-x-3 px-4 py-2 bg-black/40 backdrop-blur-md rounded-xl border border-white/10">
-                            <div className="flex space-x-1">
-                                <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse delay-75" />
-                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse delay-150" />
-                            </div>
-                            <span className="text-xs font-bold text-white uppercase tracking-[0.2em]">Premium Session</span>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {isPlaying && (
-                <div className="w-full h-full">
-                    {isLoading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-zinc-950 z-10">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
-                                <Loader2 className="h-12 w-12 text-blue-500 animate-spin relative" />
-                            </div>
+            {(!showResumePrompt && isPlaying) && (
+                <div className="absolute inset-0 w-full h-full">
+                    {!isReady && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+                            <Loader2 className="w-10 h-10 text-white animate-spin opacity-50" />
                         </div>
                     )}
-                    <iframe
+                    <ReactPlayer
+                        ref={playerRef}
+                        url={`https://www.youtube.com/watch?v=${videoId}`}
                         width="100%"
                         height="100%"
-                        src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&showinfo=0&controls=1`}
-                        onLoad={() => setIsLoading(false)}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="w-full h-full scale-[1.01]" // Hide tiny edge gaps
-                    ></iframe>
+                        playing={isReady}
+                        controls={true}
+                        onReady={handleReady}
+                        onProgress={handleProgress}
+                        progressInterval={2000} // Fire every 2 seconds
+                        config={{
+                            youtube: {
+                                playerVars: { showinfo: 1, modestbranding: 1 }
+                            } as any
+                        }}
+                    />
                 </div>
             )}
-
-            {/* Futuristic Controller Bar (Visual Only for Aesthetics) */}
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="h-full bg-blue-500 w-1/3 shadow-[0_0_10px_#3b82f6]" />
-            </div>
-
-            <div className="absolute bottom-4 right-4 flex space-x-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-                <div className="p-2 bg-black/50 backdrop-blur-lg rounded-lg border border-white/10">
-                    <Volume2 className="h-4 w-4 text-white/70" />
-                </div>
-                <div className="p-2 bg-black/50 backdrop-blur-lg rounded-lg border border-white/10">
-                    <Maximize className="h-4 w-4 text-white/70" />
-                </div>
-            </div>
         </div>
     );
 }
