@@ -459,13 +459,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         }
     };
 
-    const extractVideoId = (url: string) => {
-        if (!url) return null;
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
-    };
-
+    // Removed extractVideoId as PremiumPlayer now accepts url directly
     const handleSelectOption = async (optionId: string) => {
         if (!user || !id) return;
         setIsSelectingOption(true);
@@ -550,8 +544,6 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         );
     }
 
-    const videoId = extractVideoId(currentYoutubeUrl || '');
-
     return (
         <div className="max-w-7xl mx-auto px-6 py-8 space-y-10 font-sans text-foreground">
             {/* Action Bar */}
@@ -604,9 +596,9 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                             <ExpandableText text={phase.description} maxLength={150} className="text-muted leading-relaxed text-lg" />
                         </div>
 
-                        {videoId ? (
+                        {currentYoutubeUrl ? (
                             <div className="p-2 md:p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
-                                <PremiumPlayer videoId={videoId} phaseId={id} studentId={user?.id || ''} initialProgress={activityData?.video_watched_seconds || 0} />
+                                <PremiumPlayer url={currentYoutubeUrl} phaseId={id} studentId={user?.id || ''} initialProgress={activityData?.video_watched_seconds || 0} />
                             </div>
                         ) : (
                             <div className="aspect-video bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center text-slate-400 border-t border-slate-200 dark:border-slate-800">
