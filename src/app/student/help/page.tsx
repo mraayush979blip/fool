@@ -121,14 +121,14 @@ export default function AIHelpPage() {
                     </Link>
                     <div className="h-6 w-px bg-card-border mx-2" />
                     <div className="flex items-center gap-3">
-                        <div className="bg-primary p-2 rounded-xl shadow-lg shadow-primary/20">
+                        <div className="bg-primary p-2 rounded-xl shadow-sword">
                             <Sparkles className="h-4 w-4 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-sm font-black tracking-tight leading-none uppercase text-foreground">AI Learning Concierge</h1>
+                            <h1 className="text-sm font-black tracking-tight leading-none uppercase text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 drop-shadow-md">AI Sensei</h1>
                             <div className="flex items-center gap-1.5 mt-1.5">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-[10px] font-bold text-muted uppercase tracking-[0.2em]">High Performance Node</span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                <span className="text-[10px] font-bold text-blue-400/60 uppercase tracking-[0.2em]">High Performance Node</span>
                             </div>
                         </div>
                     </div>
@@ -136,10 +136,12 @@ export default function AIHelpPage() {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={clearChat}
-                        className="p-2 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                        className="btn-liquid-metal p-2 rounded-xl"
                         title="Clear conversation"
                     >
-                        <Trash2 className="h-4 w-4" />
+                        <span className="btn-liquid-metal-inner block">
+                            <Trash2 className="h-4 w-4 text-red-400" />
+                        </span>
                     </button>
                 </div>
             </header>
@@ -232,9 +234,11 @@ export default function AIHelpPage() {
                         <button
                             type="submit"
                             disabled={isLoading || !input.trim()}
-                            className="p-3 bg-primary hover:bg-primary/90 disabled:bg-card border border-transparent disabled:border-card-border text-white rounded-xl transition-all shadow-glow active:scale-95 flex items-center justify-center"
+                            className="btn-liquid-metal p-3 rounded-xl disabled:opacity-50"
                         >
-                            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                            <span className="btn-liquid-metal-inner flex items-center justify-center">
+                                {isLoading ? <Loader2 className="h-5 w-5 animate-spin text-blue-400" /> : <Send className="h-5 w-5 text-blue-400" />}
+                            </span>
                         </button>
                     </form>
                     <div className="mt-4 flex items-center justify-between px-2 text-[10px] font-bold text-muted uppercase tracking-widest opacity-60">

@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import NeonLoader from './NeonLoader';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function ProtectedRoute({
@@ -14,18 +14,22 @@ export default function ProtectedRoute({
 }) {
     const { user, loading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         if (!loading) {
             if (!user) {
                 router.push('/login');
             } else if (user.status === 'revoked') {
-                router.push('/revoked');
+                const isPhasePath = pathname?.startsWith('/student/phase/');
+                if (!isPhasePath) {
+                    router.push('/revoked');
+                }
             } else if (requireRole && user.role !== requireRole) {
                 router.push('/unauthorized');
             }
         }
-    }, [user, loading, requireRole, router]);
+    }, [user, loading, requireRole, router, pathname]);
 
 
     const [showLoader, setShowLoader] = useState(false);
@@ -41,10 +45,12 @@ export default function ProtectedRoute({
         return () => clearTimeout(timeoutId);
     }, [loading]);
 
-    // Show children immediately if not loading
     if (!loading) {
         // Validation logic handles redirects in existing useEffect
-        if (!user || (requireRole && user.role !== requireRole) || user.status === 'revoked') {
+        const isPhasePath = pathname?.startsWith('/student/phase/');
+        const isRevokedAndBlocked = user?.status === 'revoked' && !isPhasePath;
+        
+        if (!user || (requireRole && user.role !== requireRole) || isRevokedAndBlocked) {
             return null;
         }
         return <>{children}</>;

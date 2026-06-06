@@ -15,16 +15,21 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 import { getPhaseStatus, cn } from '@/lib/utils';
 import AnimatedBackground from '@/components/ui/animated-background';
 import { StaggerContainer, StaggerItem, SlideUp } from '@/components/ui/motion-wrapper';
 import GlassCard from '@/components/ui/glass-card';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import TrialModal from '@/components/TrialModal';
 
 export default function StudentDashboard() {
     const { user, loading: authLoading } = useAuth();
     const queryClient = useQueryClient();
+    const router = useRouter();
+    const [clickedPhaseId, setClickedPhaseId] = useState<string | null>(null);
 
     const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
         queryKey: ['student-dashboard', user?.id],
@@ -69,24 +74,35 @@ export default function StudentDashboard() {
                     .select('total_time_spent_seconds, phase_id')
                     .eq('student_id', user?.id));
 
+                const extensionsPromise = Promise.resolve(supabase.from('phase_extensions')
+                    .select('phase_id, extended_deadline')
+                    .eq('student_id', user?.id));
+
                 console.log('⏳ [Dashboard] Awaiting optimized parallel data fetch...');
-                const [streakResult, phasesResult, userResult, submissionsResult, activityResult] = await withTimeout(Promise.all([
+                const [streakResult, phasesResult, userResult, submissionsResult, activityResult, extensionsResult] = await withTimeout(Promise.all([
                     streakPromise,
                     phasesPromise,
                     userPromise,
                     submissionsPromise,
-                    activityPromise
+                    activityPromise,
+                    extensionsPromise
                 ]));
 
                 const phases = phasesResult?.data || [];
                 const submissionIds = new Set((submissionsResult?.data || []).map((s: any) => s.phase_id));
                 const totalLearningTime = (activityResult?.data || []).reduce((acc: number, curr: any) => acc + (curr.total_time_spent_seconds || 0), 0);
 
+                const extensions = (extensionsResult?.data || []).reduce((acc: any, curr: any) => {
+                    acc[curr.phase_id] = curr.extended_deadline;
+                    return acc;
+                }, {});
+
                 console.log('✅ [Dashboard] Data loaded successfully');
 
                 return {
                     phases,
                     submissions: submissionIds,
+                    extensions,
                     stats: {
                         completedCount: (submissionsResult?.data?.length as number) || 0,
                         totalTimeSeconds: totalLearningTime,
@@ -99,6 +115,7 @@ export default function StudentDashboard() {
                 return {
                     phases: [],
                     submissions: new Set<string>(),
+                    extensions: {},
                     stats: { completedCount: 0, totalTimeSeconds: 0, points: 0 },
                     userMetadata: null
                 };
@@ -127,6 +144,7 @@ export default function StudentDashboard() {
     const loading = authLoading || dashboardLoading;
     const phases = dashboardData?.phases || [];
     const submissions = (dashboardData?.submissions as Set<string>) || new Set<string>();
+    const extensions = dashboardData?.extensions || {};
     const stats = dashboardData?.stats || { completedCount: 0, totalTimeSeconds: 0, points: 0 };
 
     if (loading) {
@@ -148,8 +166,9 @@ export default function StudentDashboard() {
     const livePhasesCount = phases.filter((p: any) => getPhaseStatus(p.start_date, p.end_date, p.is_paused) === 'live').length;
 
     return (
-        <div className="relative min-h-[calc(100vh-80px)] font-sans text-foreground">
+        <div className="relative min-h-[calc(100vh-80px)] font-sans text-foreground bg-[#050507] overflow-x-hidden">
             <AnimatedBackground theme={user?.equipped_theme} />
+            <TrialModal />
 
             <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-12 space-y-8 md:space-y-12 relative z-10">
 
@@ -157,14 +176,14 @@ export default function StudentDashboard() {
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-10 border-b border-card-border">
                     <SlideUp>
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2.5 text-primary">
-                                <Sparkles className="w-4 h-4" />
+                            <div className="flex items-center gap-2.5 text-blue-400">
+                                <Sparkles className="w-4 h-4 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
                                 <span className="text-[10px] font-bold uppercase tracking-[0.25em]">{getGreeting()}</span>
                             </div>
-                            <h1 className="text-3xl md:text-5xl font-black tracking-[-0.03em] leading-tight text-foreground">
-                                Welcome Back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">{user?.name?.split(' ')[0] || 'Student'}</span>
+                            <h1 className="text-3xl md:text-5xl font-black tracking-[-0.03em] leading-tight text-white">
+                                Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 drop-shadow-sm">{user?.name?.split(' ')[0] || 'Shinobi'}</span>
                             </h1>
-                            <p className="text-base md:text-lg text-muted font-medium">Ready to continue your specialization today?</p>
+                            <p className="text-base md:text-lg text-zinc-400 font-medium">Ready to continue your mastery today?</p>
                         </div>
                     </SlideUp>
 
@@ -193,88 +212,141 @@ export default function StudentDashboard() {
                     {/* Main Timeline */}
                     <div className="lg:col-span-2 space-y-6 md:space-y-8">
                         <SlideUp delay={0.2} className="flex items-center justify-between">
-                            <h2 className="text-lg md:text-xl font-bold flex items-center gap-2 md:gap-3 text-foreground">
-                                <LayoutDashboard className="w-5 h-5 text-primary" />
-                                Your Specialization Path
+                            <h2 className="text-lg md:text-xl font-bold flex items-center gap-2 md:gap-3 text-white">
+                                <LayoutDashboard className="w-5 h-5 text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                                The Path of Shadows
                             </h2>
-                            <span className="text-[11px] font-bold uppercase tracking-widest bg-card border border-card-border px-3 py-1 rounded-full text-muted">{phases.length} Phases Available</span>
+                            <span className="text-[11px] font-bold uppercase tracking-widest bg-[#090a0f] border border-blue-900/30 px-3 py-1 rounded-full text-blue-400">{phases.length} Scrolls Available</span>
                         </SlideUp>
 
-                        <StaggerContainer className="grid grid-cols-1 gap-6">
-                            {phases.map((phase: Phase) => {
+                        <div className="relative pl-12 md:pl-16 py-8 flex flex-col gap-6">
+                            {/* The Sword Timeline */}
+                            <div className="absolute top-0 bottom-0 left-4 md:left-6 flex flex-col items-center z-0">
+                                {/* Pommel */}
+                                <div className="w-4 h-4 bg-zinc-800 border border-zinc-600 rounded-full z-10" />
+                                {/* Handle/Hilt */}
+                                <div className="w-2.5 h-16 bg-zinc-900 border-x border-zinc-700 z-10 flex flex-col justify-evenly">
+                                    <div className="w-full h-px bg-zinc-700/50 rotate-45" />
+                                    <div className="w-full h-px bg-zinc-700/50 -rotate-45" />
+                                    <div className="w-full h-px bg-zinc-700/50 rotate-45" />
+                                </div>
+                                {/* Tsuba (Guard) */}
+                                <div className="w-8 h-2 bg-[#090a0f] border border-blue-500 rounded-sm z-10 shadow-[0_0_15px_#3b82f6]" />
+                                {/* Blade */}
+                                <motion.div 
+                                    initial={{ height: 0 }}
+                                    animate={{ height: "100%" }}
+                                    transition={{ duration: 1.5, ease: "easeOut" }}
+                                    className="w-1 md:w-1.5 bg-gradient-to-b from-white via-blue-500 to-transparent shadow-[0_0_20px_#3b82f6] rounded-full flex-1 origin-top" 
+                                />
+                            </div>
+
+                            {phases.map((phase: Phase, index: number) => {
                                 const status = getPhaseStatus(phase.start_date, phase.end_date, phase.is_paused);
                                 const isLive = status === 'live';
                                 const isPaused = status === 'paused';
                                 const isUpcoming = status === 'upcoming';
                                 const isLocked = isPaused || isUpcoming;
                                 const isCompleted = submissions.has(phase.id);
+                                const isClicked = clickedPhaseId === phase.id;
+                                const extensionDate = extensions[phase.id];
 
                                 return (
-                                    <StaggerItem key={phase.id}>
-                                        <Link
-                                            href={isLocked ? '#' : `/student/phase/${phase.id}`}
-                                            onMouseEnter={() => {
-                                                if (!isLocked) {
-                                                    queryClient.prefetchQuery({
-                                                        queryKey: ['phase', phase.id],
-                                                        queryFn: async () => {
-                                                            const { data } = await supabase.from('phases').select('*').eq('id', phase.id).single();
-                                                            return data;
-                                                        }
-                                                    });
+                                    <motion.div
+                                        key={phase.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true, margin: "0px" }}
+                                        transition={isClicked ? { duration: 0.6, times: [0, 0.2, 0.4, 1], ease: "easeInOut" } : { duration: 0.3, ease: "easeOut" }}
+                                        animate={
+                                            isClicked ? {
+                                                scaleX: [1, 0.05, 0.05, 20],
+                                                scaleY: [1, 0.1, 0.01, 0.01],
+                                                backgroundColor: ["#090a0f", "#3b82f6", "#fff", "#3b82f6"],
+                                                boxShadow: ["none", "0 0 20px #3b82f6", "0 0 50px #fff", "0 0 100px #3b82f6"],
+                                                opacity: [1, 1, 1, 0],
+                                                x: [0, 0, 0, "150vw"],
+                                            } : {
+                                                opacity: 1
+                                            }
+                                        }
+                                        onClick={(e: React.MouseEvent) => {
+                                            e.preventDefault();
+                                            if (isLocked || isClicked) return;
+                                            
+                                            setClickedPhaseId(phase.id);
+                                            
+                                            // Prefetch
+                                            queryClient.prefetchQuery({
+                                                queryKey: ['phase', phase.id],
+                                                queryFn: async () => {
+                                                    const { data } = await supabase.from('phases').select('*').eq('id', phase.id).single();
+                                                    return data;
                                                 }
-                                            }}
-                                            className={cn(
-                                                "group block relative overflow-hidden rounded-3xl md:rounded-[2rem] border transition-all duration-500 flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 md:gap-6 md:p-8 gpu-accelerated bg-card",
-                                                isLocked
-                                                    ? "border-card-border opacity-60 grayscale cursor-not-allowed"
-                                                    : "border-card-border hover:border-primary/30 hover:shadow-glow hover:-translate-y-1.5"
-                                            )}
-                                        >
-                                            <div className="flex items-center gap-4 md:gap-8 min-w-0">
-                                                <div className={cn(
-                                                    "w-12 h-12 md:w-16 md:h-16 shrink-0 rounded-2xl flex items-center justify-center font-black text-lg md:text-xl transition-all duration-500",
-                                                    isLocked ? "bg-card border border-card-border text-muted" :
-                                                        isCompleted ? "bg-emerald-500/10 text-emerald-500" : "bg-primary text-white shadow-xl shadow-primary/20 group-hover:scale-110"
-                                                )}>
-                                                    {isLocked ? <Lock className="w-6 h-6" /> : isCompleted ? <CheckCircle2 className="w-7 h-7" /> : phase.phase_number}
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <h3 className="text-lg md:text-xl font-bold tracking-tight mb-1.5 group-hover:text-primary transition-colors truncate text-foreground">
-                                                        {phase.title}
-                                                    </h3>
-                                                    <div className="flex items-center gap-4 flex-wrap">
-                                                        <span className={cn(
-                                                            "text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5",
-                                                            isLive ? "text-primary" : isCompleted ? "text-emerald-500" : "text-muted"
-                                                        )}>
-                                                            {isLive && <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
-                                                            {isPaused ? 'Paused' : isUpcoming ? 'Locked' : isCompleted ? 'Completed' : 'Enrolled'}
-                                                        </span>
-                                                        
-                                                        {phase.is_mandatory && !isCompleted && submissions.has(phase.id) && (
-                                                            <span className="text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                                                <Zap className="w-2.5 h-2.5 fill-current" /> Safe
-                                                            </span>
-                                                        )}
+                                            });
 
-                                                        <span className="h-1 w-1 rounded-full bg-card-border" />
-                                                        <span className="text-[10px] font-bold text-muted">Deadline: {new Date(phase.end_date).toLocaleDateString()}</span>
-                                                    </div>
+                                            // Navigate after sword animation finishes
+                                            setTimeout(() => {
+                                                router.push(`/student/phase/${phase.id}`);
+                                            }, 700);
+                                        }}
+                                        className={cn(
+                                            "group block relative overflow-hidden rounded-3xl md:rounded-[2rem] border transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 md:gap-6 md:p-8 gpu-accelerated bg-card",
+                                            isLocked
+                                                ? "border-card-border opacity-60 grayscale cursor-not-allowed"
+                                                : isClicked 
+                                                    ? "border-transparent" 
+                                                    : "border-card-border hover:border-blue-900/50 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] hover:-translate-y-1.5 cursor-pointer z-10"
+                                        )}
+                                        style={{ transformOrigin: "left center" }}
+                                    >
+                                        <div className="flex items-center gap-4 md:gap-8 min-w-0 pointer-events-none">
+                                            <div className={cn(
+                                                "w-12 h-12 md:w-16 md:h-16 shrink-0 rounded-2xl flex items-center justify-center font-black text-lg md:text-xl transition-all duration-500",
+                                                isLocked ? "bg-[#050507] border border-zinc-800 text-zinc-500" :
+                                                    isCompleted ? "bg-purple-900/20 text-purple-400 border border-purple-500/30" : "bg-blue-600/10 text-blue-400 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.3)] group-hover:scale-110"
+                                            )}>
+                                                {isLocked ? <Lock className="w-6 h-6" /> : isCompleted ? <CheckCircle2 className="w-7 h-7" /> : phase.phase_number}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="text-lg md:text-xl font-bold tracking-tight mb-1.5 group-hover:text-blue-400 transition-colors truncate text-white">
+                                                    {phase.title}
+                                                </h3>
+                                                <div className="flex items-center gap-4 flex-wrap">
+                                                    <span className={cn(
+                                                        "text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5",
+                                                        isLive ? "text-blue-400" : isCompleted ? "text-purple-400" : "text-zinc-500"
+                                                    )}>
+                                                        {isLive && <span className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6] animate-pulse" />}
+                                                        {isPaused ? 'Paused' : isUpcoming ? 'Locked' : isCompleted ? 'Completed' : 'Enrolled'}
+                                                    </span>
+                                                    
+                                                    {phase.is_mandatory && !isCompleted && submissions.has(phase.id) && (
+                                                        <span className="text-[10px] font-black uppercase bg-blue-900/30 border border-blue-500/30 text-blue-400 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                                            <Zap className="w-2.5 h-2.5 fill-current" /> Safe
+                                                        </span>
+                                                    )}
+
+                                                    <span className="h-1 w-1 rounded-full bg-zinc-800" />
+                                                    {extensionDate ? (
+                                                        <span className="text-[10px] font-bold text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]">Extended to: {new Date(extensionDate).toLocaleDateString()}</span>
+                                                    ) : (
+                                                        <span className="text-[10px] font-bold text-zinc-500">Deadline: {new Date(phase.end_date).toLocaleDateString()}</span>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-4">
-                                                {!isLocked && (
-                                                    <div className="bg-card border border-card-border p-3 rounded-xl group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
-                                                        <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </Link>
-                                    </StaggerItem>
+                                        </div>
+                                        <div className="flex items-center gap-4 pointer-events-none">
+                                            {!isLocked && (
+                                                <div className="bg-[#050507] border border-blue-900/50 p-3 rounded-xl text-blue-400 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-[0_0_15px_#3b82f6] transition-all shadow-sm">
+                                                    <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
                                 );
                             })}
-                        </StaggerContainer>
+                        </div>
                     </div>
 
                     {/* Pro Sidebar */}

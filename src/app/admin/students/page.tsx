@@ -57,13 +57,32 @@ export default function StudentListPage() {
         const newStatus = student.status === 'active' ? 'revoked' : 'active';
         if (!confirm(`Are you sure you want to ${newStatus === 'revoked' ? 'revoke access for' : 'restore access for'} ${student.name}?`)) return;
 
+        let extensionDays = 0;
+        if (newStatus === 'active') {
+            const daysInput = window.prompt(`How many days extension should ${student.name} get to complete their backlog? (e.g. 7)`);
+            if (daysInput === null) return;
+            
+            extensionDays = parseInt(daysInput);
+            if (isNaN(extensionDays) || extensionDays <= 0) {
+                alert('Please enter a valid number of days.');
+                return;
+            }
+        }
+
         setActionLoading(true);
         try {
             if (newStatus === 'active') {
                 const { error } = await supabase.rpc('admin_restore_student', {
-                    target_student_id: student.id
+                    target_student_id: student.id,
+                    extension_days: extensionDays
                 });
                 if (error) throw error;
+                
+                if (student.phone && confirm('Student restored! Would you like to notify them via WhatsApp?')) {
+                    const text = `Hi ${student.name},\n\nYour Levelone account has been restored! You have been granted an extension of ${extensionDays} days to complete your backlog. Please log in and submit your assignment before the new deadline to avoid losing access again.\n\nBest,\nLevelone Admin`;
+                    const url = `https://wa.me/${student.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`;
+                    window.open(url, '_blank');
+                }
             } else {
                 const { error } = await supabase
                     .from('users')

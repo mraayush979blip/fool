@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Theme 1: Arctic Ivory (Cleanest Light - DEFAULT) */
+  /* Theme 1: Arctic Ivory (Cleanest Light - DEFAULT) - We keep it but default to Dark if we can */
   --background: #fdfdfd;
   --foreground: #020617;
   --theme-primary: #0891b2;
@@ -15,19 +15,22 @@
   --nav-bg: rgba(253, 253, 253, 0.9);
 }
 
-[data-theme='theme-dark'] {
-  /* Theme 2: Midnight Pro (Refined OLED Dark) */
-  --background: #000000;
-  --foreground: #ffffff;
-  --theme-primary: #f59e0b;
-  --theme-primary-rgb: 245, 158, 11;
-  --card-bg: #0a0a0a;
-  --card-bg-rgb: 10, 10, 10;
-  --card-border: #1a1a1a;
-  --text-muted: #a1a1aa;
+/* We will make dark theme the default or overwrite root with it for a complete ninja feel */
+[data-theme='theme-dark'], :root {
+  /* Night Sword Ninja Theme (Deep metallic darks with striking accents) */
+  --background: #050507; /* Very deep charcoal/black */
+  --foreground: #e4e4e7;
+  --theme-primary: #3b82f6; /* Sword glow blue */
+  --theme-primary-rgb: 59, 130, 246;
+  --theme-accent: #8b5cf6; /* Secondary magic purple/neon */
+  --theme-accent-rgb: 139, 92, 246;
+  --card-bg: #090a0f;
+  --card-bg-rgb: 9, 10, 15;
+  --card-border: #1f2232;
+  --text-muted: #8b949e;
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
-  --nav-bg: rgba(0, 0, 0, 0.9);
+  --nav-bg: rgba(5, 5, 7, 0.9);
 }
 
 @theme inline {
@@ -42,6 +45,7 @@
   --radius-xl: var(--radius-xl);
   --radius-2xl: var(--radius-2xl);
   --shadow-glow: 0 0 20px rgba(var(--theme-primary-rgb), 0.15);
+  --shadow-sword: 0 0 15px rgba(var(--theme-primary-rgb), 0.5), 0 0 30px rgba(var(--theme-accent-rgb), 0.3);
 }
 
 body {
@@ -64,6 +68,85 @@ body {
   transform: translateZ(0);
   will-change: transform, opacity;
   backface-visibility: hidden;
+}
+
+/* Liquid Metallic Button - Hi Fi Animation */
+.btn-liquid-metal {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1e293b, #0f172a, #1e293b);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 9999px;
+  box-shadow: 
+    0 4px 15px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 1;
+}
+
+.btn-liquid-metal::before {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  background: linear-gradient(45deg, 
+    rgba(var(--theme-primary-rgb), 0), 
+    rgba(var(--theme-primary-rgb), 0.8), 
+    rgba(var(--theme-accent-rgb), 0.8), 
+    rgba(var(--theme-primary-rgb), 0));
+  background-size: 400%;
+  border-radius: 9999px;
+  z-index: -2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  animation: liquid-border 3s linear infinite;
+}
+
+.btn-liquid-metal::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+  border-radius: 9999px;
+  z-index: -1;
+  transition: all 0.4s ease;
+}
+
+.btn-liquid-metal:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(var(--theme-primary-rgb), 0.4);
+}
+
+.btn-liquid-metal:hover::before {
+  opacity: 1;
+}
+
+.btn-liquid-metal:hover::after {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+.btn-liquid-metal-inner {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(90deg, #fff, #a5b4fc, #fff);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shine 3s linear infinite;
+}
+
+@keyframes liquid-border {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
 }
 
 /* Premium Shimmer Effect */
@@ -99,15 +182,43 @@ select {
   border: 1px solid var(--card-border) !important;
   border-radius: 0.75rem !important;
   padding: 0.75rem 1rem !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   outline: none !important;
 }
 
 input:focus,
 textarea:focus {
   border-color: var(--theme-primary) !important;
-  box-shadow: 0 0 0 3px rgba(var(--theme-primary-rgb), 0.1) !important;
+  box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.2) !important;
+  background-color: rgba(15, 23, 42, 0.5) !important;
 }
 
+/* Ninja Sword Slash Animation */
+.sword-slash {
+  position: absolute;
+  width: 150%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--theme-primary), transparent);
+  transform: rotate(-45deg) translateY(-50%);
+  animation: slash 2s infinite cubic-bezier(0.8, 0, 0.2, 1);
+  opacity: 0;
+}
 
-/* Theme Clean Up Complete */
+@keyframes slash {
+  0% {
+    left: -100%;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+    box-shadow: 0 0 20px var(--theme-primary);
+  }
+  40% {
+    left: 100%;
+    opacity: 0;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}

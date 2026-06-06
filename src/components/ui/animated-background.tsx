@@ -30,7 +30,7 @@ export default function AnimatedBackground({ theme = 'default' }: { theme?: stri
                     repeat: Infinity,
                     ease: "easeInOut",
                 }}
-                className="absolute top-0 left-0 w-[500px] h-[500px] bg-theme-primary/20 rounded-full blur-[100px]"
+                className="absolute top-0 left-0 w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(8,145,178,0.15)_0%,transparent_70%)] rounded-full -translate-x-1/4 -translate-y-1/4"
             />
 
             <motion.div
@@ -46,7 +46,7 @@ export default function AnimatedBackground({ theme = 'default' }: { theme?: stri
                     ease: "easeInOut",
                     delay: 2,
                 }}
-                className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[120px]"
+                className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(147,51,234,0.1)_0%,transparent_70%)] rounded-full translate-x-1/4 translate-y-1/4"
             />
 
             <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]" />

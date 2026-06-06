@@ -4,40 +4,33 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import NeonLoader from '@/components/NeonLoader';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { AlertCircle, ArrowRight, Loader2, Lock, Mail, Shield } from 'lucide-react';
+import { AlertCircle, Loader2, Lock, Mail, ArrowRight, Home, Eye, EyeOff, Shield } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const { signIn, user, loading: authLoading } = useAuth();
     const router = useRouter();
 
+    const [mounted, setMounted] = useState(false);
+
     useEffect(() => {
+        setMounted(true);
         if (!authLoading && user) {
-            router.push('/');
+            if (user.role === 'admin') {
+                window.location.href = '/admin';
+            } else {
+                window.location.href = '/student';
+            }
         }
     }, [user, authLoading, router]);
 
-    const [showLoader, setShowLoader] = useState(false);
-
-    useEffect(() => {
-        let timeoutId: NodeJS.Timeout;
-        if (authLoading) {
-            timeoutId = setTimeout(() => setShowLoader(true), 500);
-        } else {
-            setShowLoader(false);
-        }
-        return () => clearTimeout(timeoutId);
-    }, [authLoading]);
-
-    if (authLoading) {
-        if (showLoader) {
-            return <NeonLoader />;
-        }
-        return null;
+    if (!mounted || authLoading) {
+        return <NeonLoader />;
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -47,149 +40,116 @@ export default function LoginPage() {
 
         try {
             await signIn(email, password);
-            router.push('/');
+            try {
+                if (document.documentElement.requestFullscreen) {
+                    await document.documentElement.requestFullscreen();
+                } else if ((document.documentElement as any).webkitRequestFullscreen) {
+                    await ((document.documentElement as any).webkitRequestFullscreen)();
+                }
+            } catch (e) {
+                console.warn('Fullscreen request failed:', e);
+            }
         } catch (err: any) {
             console.error('Login error:', err);
-            setError(err.message || 'Failed to sign in');
+            setError(err.message || 'Failed to authenticate');
         } finally {
             setLoading(false);
         }
     };
 
-    const containerVariants: Variants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { 
-            opacity: 1, 
-            y: 0,
-            transition: { 
-                type: "spring" as const,
-                stiffness: 100,
-                damping: 20,
-                staggerChildren: 0.1,
-                delayChildren: 0.2
-            }
-        }
-    };
-
-    const itemVariants: Variants = {
-        hidden: { opacity: 0, x: -10 },
-        visible: { 
-            opacity: 1, 
-            x: 0,
-            transition: { type: "spring" as const, stiffness: 100 }
-        }
-    };
-
     return (
-        <div className="min-h-screen flex items-center justify-center bg-black overflow-hidden relative font-sans">
-            {/* Ambient Background Glow */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_0%,transparent_70%)] pointer-events-none" />
-            
-            <motion.div 
-                initial="hidden"
-                animate="visible"
-                variants={containerVariants}
-                className="w-full max-w-md p-8 relative z-10"
-            >
-                {/* Logo Section */}
-                <div className="flex flex-col items-center mb-12">
-                    <motion.div 
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                        className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(255,255,255,0.2)] relative"
-                    >
-                        <div className="w-6 h-6 bg-black rotate-45" />
-                        <div className="absolute inset-0 rounded-full border border-white/20 animate-ping" />
-                    </motion.div>
-                    
-                    <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-2">
-                        LEVELONE
-                    </h1>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">
-                        Institutional Node Login
-                    </p>
+        <div className="min-h-screen flex items-center justify-center bg-background p-4 font-sans">
+            <div className="w-full max-w-md bg-card border border-card-border rounded-3xl shadow-sm overflow-hidden flex flex-col">
+                <div className="p-8 sm:p-10 flex-1">
+                    {/* Header */}
+                    <div className="flex flex-col items-center mb-8 text-center">
+                        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 border border-primary/20">
+                            <Shield className="w-6 h-6 text-primary" />
+                        </div>
+                        <h1 className="text-2xl font-black text-foreground tracking-tight mb-1">
+                            Welcome back
+                        </h1>
+                        <p className="text-sm text-muted">
+                            Log in to access your Levelone dashboard
+                        </p>
+                    </div>
+
+                    {/* Form */}
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {error && (
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl flex items-center gap-3 text-sm font-medium">
+                                <AlertCircle className="h-4 w-4 shrink-0" />
+                                <p>{error}</p>
+                            </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-muted ml-1">Email</label>
+                            <div className="relative">
+                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    placeholder="user@example.com"
+                                    className="w-full !pl-11 pr-4 py-3 bg-background border border-card-border rounded-xl text-foreground placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-muted ml-1">Password</label>
+                            <div className="relative">
+                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    placeholder="••••••••"
+                                    className="w-full !pl-11 pr-10 py-3 bg-background border border-card-border rounded-xl text-foreground placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors z-10"
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-3.5 mt-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none"
+                        >
+                            {loading ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                                <>
+                                    Log In
+                                    <ArrowRight className="h-4 w-4" />
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    <div className="mt-8 flex items-center justify-center">
+                        <Link href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-muted hover:text-foreground transition-colors">
+                            <Home className="h-3.5 w-3.5" />
+                            Return Home
+                        </Link>
+                    </div>
                 </div>
 
-                {/* Form Section */}
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <motion.div variants={itemVariants} className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-white/50 ml-1">
-                            Identification
-                        </label>
-                        <div className="relative group">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 group-focus-within:text-white/60 transition-colors" />
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                placeholder="name@organization.com"
-                                className="w-full pl-11 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 outline-none focus:bg-white/10 focus:border-white/20 focus:ring-1 focus:ring-white/50 transition-all"
-                            />
-                        </div>
-                    </motion.div>
-
-                    <motion.div variants={itemVariants} className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-white/50 ml-1">
-                            Credential
-                        </label>
-                        <div className="relative group">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 group-focus-within:text-white/60 transition-colors" />
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                placeholder="••••••••"
-                                className="w-full pl-11 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 outline-none focus:bg-white/10 focus:border-white/20 focus:ring-1 focus:ring-white/50 transition-all"
-                            />
-                        </div>
-                    </motion.div>
-
-                    <AnimatePresence>
-                        {error && (
-                            <motion.div 
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3 overflow-hidden"
-                            >
-                                <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-red-500">
-                                    {error}
-                                </span>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    <motion.button
-                        variants={itemVariants}
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.98 }}
-                        disabled={loading}
-                        className="w-full py-4 bg-white text-black font-black uppercase tracking-[0.2em] rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.15)] hover:shadow-[0_0_50px_rgba(255,255,255,0.25)] transition-all flex items-center justify-center gap-3 disabled:opacity-50 mt-4"
-                    >
-                        {loading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <>
-                                Authenticate
-                                <ArrowRight className="h-4 w-4" />
-                            </>
-                        )}
-                    </motion.button>
-                </form>
-
-                {/* Footer Section */}
-                <motion.div 
-                    variants={itemVariants}
-                    className="mt-12 pt-8 border-t border-white/5 flex flex-col items-center gap-6"
-                >
+                <div className="p-4 border-t border-card-border bg-card-border/10 text-center flex items-center justify-between">
+                    <p className="text-[10px] text-muted font-semibold tracking-wider uppercase">LevelOne Systems</p>
                     <button
                         type="button"
                         onClick={async () => {
-                            if (confirm('Initiate complete system cache purge?')) {
+                            if (confirm('Cleanse the cache?')) {
                                 localStorage.clear();
                                 if ('serviceWorker' in navigator) {
                                     const regs = await navigator.serviceWorker.getRegistrations();
@@ -198,22 +158,12 @@ export default function LoginPage() {
                                 window.location.reload();
                             }
                         }}
-                        className="text-white/20 hover:text-red-500 text-[9px] font-black uppercase tracking-[0.2em] transition-colors flex items-center gap-2"
+                        className="text-[10px] font-bold text-red-500 hover:text-red-400 transition-colors uppercase"
                     >
-                        <Shield className="h-3 w-3" />
-                        Reset Core Buffer
+                        Reset Cache
                     </button>
-                    
-                    <div className="flex flex-col items-center">
-                        <p className="text-white/10 text-[8px] font-black uppercase tracking-widest">
-                            Secure Shell Protocol v2.4.0
-                        </p>
-                        <p className="text-white/10 text-[8px] font-black uppercase tracking-widest">
-                            © 2026 Levelone Data Systems
-                        </p>
-                    </div>
-                </motion.div>
-            </motion.div>
+                </div>
+            </div>
         </div>
     );
 }

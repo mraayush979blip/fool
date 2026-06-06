@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'levelone-v2.5';
+const CACHE_VERSION = 'levelone-v2.6';
 const CACHE_NAME = `levelone-cache-${CACHE_VERSION}`;
 
 /**
@@ -43,7 +43,7 @@ self.addEventListener('fetch', (event) => {
     // 3. NETWORK-FIRST Strategy: For HTML/Next.js pages/navigates
     if (request.mode === 'navigate') {
         event.respondWith(
-            fetch(request).catch(() => caches.match(request))
+            fetch(request).catch(() => caches.match(request).then(res => res || new Response('Network Error', { status: 408 })))
         );
         return;
     }
@@ -61,7 +61,7 @@ self.addEventListener('fetch', (event) => {
                             cache.put(request, networkResponse.clone());
                         }
                         return networkResponse;
-                    }).catch(() => null);
+                    }).catch(() => new Response('', { status: 408, statusText: 'Request Timeout' }));
 
                     return cachedResponse || fetchedResponse;
                 });
@@ -72,6 +72,6 @@ self.addEventListener('fetch', (event) => {
 
     // 5. DEFAULT: Network-first
     event.respondWith(
-        fetch(request).catch(() => caches.match(request))
+        fetch(request).catch(() => caches.match(request).then(res => res || new Response('', { status: 408 })))
     );
 });

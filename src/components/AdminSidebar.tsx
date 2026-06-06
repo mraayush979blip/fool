@@ -22,7 +22,8 @@ const navItems = [
     { name: 'Phases', href: '/admin/phases', icon: Layers },
     { name: 'Assignment', href: '/admin/assignment', icon: FileText },
     { name: 'Students', href: '/admin/students', icon: Users },
-    { name: 'Import CSV', href: '/admin/student-import', icon: Upload },
+    { name: 'Add Students', href: '/admin/student-import', icon: Upload },
+    { name: 'Appeals', href: '/admin/appeals', icon: FileText },
 ];
 
 export default function AdminSidebar() {

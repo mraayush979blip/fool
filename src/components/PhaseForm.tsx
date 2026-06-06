@@ -17,6 +17,8 @@ import { supabase } from '@/lib/supabase';
 import { Phase, PhaseOption } from '@/types/database';
 import { isValidFileSize, formatFileSize, isValidAssignmentFileType } from '@/utils/validation';
 import { sendEmailNotification } from '@/actions/sendEmail';
+import PhaseOptionsBuilder from './admin/phase-form/PhaseOptionsBuilder';
+import AssignmentSettings from './admin/phase-form/AssignmentSettings';
 
 interface PhaseFormProps {
     id?: string;
@@ -561,208 +563,18 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                             </div>
                         </>
                     ) : (
-                        <div className="sm:col-span-6 space-y-6">
-                            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                                <h3 className="text-lg font-medium text-gray-900">Content Options</h3>
-                                <button
-                                    type="button"
-                                    onClick={handleAddOption}
-                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-bold rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
-                                >
-                                    + Add New Option
-                                </button>
-                            </div>
-
-                            {formData.options?.map((option, index) => (
-                                <div key={option.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 relative">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveOption(option.id)}
-                                        className="absolute top-4 right-4 p-1 text-slate-400 hover:text-red-500 transition-colors"
-                                    >
-                                        <X className="h-5 w-5" />
-                                    </button>
-
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">Option {index + 1}</span>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="sm:col-span-2">
-                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Option Title</label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. Solution using Python"
-                                                className="w-full text-sm font-medium border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border rounded-md"
-                                                value={option.title}
-                                                onChange={(e) => handleUpdateOption(option.id, { title: e.target.value })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">YouTube Video URL</label>
-                                            <input
-                                                type="url"
-                                                placeholder="YouTube Link"
-                                                className="w-full text-sm font-medium border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border rounded-md"
-                                                value={option.youtube_url}
-                                                onChange={(e) => handleUpdateOption(option.id, { youtube_url: e.target.value })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Resource URL (Optional)</label>
-                                            <input
-                                                type="url"
-                                                placeholder="GitHub or External Link"
-                                                className="w-full text-sm font-medium border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border rounded-md"
-                                                value={option.assignment_resource_url}
-                                                onChange={(e) => handleUpdateOption(option.id, { assignment_resource_url: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="sm:col-span-2">
-                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Allowed Submission Type</label>
-                                            <select
-                                                className="w-full text-sm font-medium border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border rounded-md"
-                                                value={option.allowed_submission_type || 'both'}
-                                                onChange={(e) => handleUpdateOption(option.id, { allowed_submission_type: e.target.value as any })}
-                                            >
-                                                <option value="both">Both (GitHub & File)</option>
-                                                <option value="github">GitHub Link Only</option>
-                                                <option value="file">File Upload Only</option>
-                                            </select>
-                                        </div>
-                                        <div className="sm:col-span-2">
-                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1">Assignment PDF</label>
-                                            <div className="flex items-center gap-4 mt-1">
-                                                {(option.assignment_file_url || optionFiles[option.id]) ? (
-                                                    <div className="flex items-center justify-between flex-1 p-3 bg-white border border-slate-200 rounded-xl">
-                                                        <div className="flex items-center gap-3">
-                                                            <FileText className="h-5 w-5 text-indigo-500" />
-                                                            <span className="text-xs font-bold truncate max-w-[200px]">
-                                                                {optionFiles[option.id] ? optionFiles[option.id].name : option.assignment_file_url?.split('/').pop()}
-                                                            </span>
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleRemoveOptionFile(option.id)}
-                                                            className="text-red-500 hover:text-red-700 text-xs font-bold"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <label className="flex-1 flex items-center justify-center p-3 border-2 border-dashed border-slate-300 rounded-xl hover:border-indigo-400 cursor-pointer transition-colors bg-white">
-                                                        <Upload className="h-4 w-4 text-slate-400 mr-2" />
-                                                        <span className="text-xs font-bold text-slate-500">Upload PDF</span>
-                                                        <input
-                                                            type="file"
-                                                            className="hidden"
-                                                            accept=".pdf,image/png,image/jpeg,image/jpg"
-                                                            onChange={(e) => handleOptionFileSelect(e, option.id)}
-                                                        />
-                                                    </label>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {(!formData.options || formData.options.length === 0) && (
-                                <div className="text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                                    <Video className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No options added yet</p>
-                                    <button
-                                        type="button"
-                                        onClick={handleAddOption}
-                                        className="mt-4 text-indigo-600 font-bold text-xs"
-                                    >
-                                        + Click to add your first option
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        <PhaseOptionsBuilder
+                            options={formData.options || []}
+                            optionFiles={optionFiles}
+                            handleAddOption={handleAddOption}
+                            handleRemoveOption={handleRemoveOption}
+                            handleUpdateOption={handleUpdateOption}
+                            handleOptionFileSelect={handleOptionFileSelect}
+                            handleRemoveOptionFile={handleRemoveOptionFile}
+                        />
                     )}
 
-                    <div className="sm:col-span-6">
-                        <label htmlFor="min_seconds_required" className="block text-sm font-bold text-gray-700">
-                            Minimum Time Spent (Minutes) to Unlock Assignment
-                        </label>
-                        <div className="mt-1 flex items-center">
-                            <input
-                                type="number"
-                                name="min_seconds_required"
-                                id="min_seconds_required"
-                                min="0"
-                                step="0.1"
-                                placeholder="e.g. 0.5 for 30 seconds"
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
-                                value={isNaN(formData.min_seconds_required as number) ? '' : (formData.min_seconds_required ? formData.min_seconds_required / 60 : 0)}
-                                onChange={(e) => {
-                                    const val = e.target.value === '' ? NaN : parseFloat(e.target.value) * 60;
-                                    setFormData({ ...formData, min_seconds_required: val });
-                                }}
-                            />
-                            <span className="ml-3 text-sm text-gray-500">minutes</span>
-                        </div>
-                        <p className="mt-1 text-xs text-gray-400 italic">Students must spend at least this much time on the phase page before they can submit (0 = Requires Video Completion).</p>
-                    </div>
-
-                    <div className="sm:col-span-6">
-                        <div className="flex items-start">
-                            <div className="flex items-center h-5">
-                                <input
-                                    id="bypass_time_requirement"
-                                    name="bypass_time_requirement"
-                                    type="checkbox"
-                                    className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                    checked={formData.bypass_time_requirement || false}
-                                    onChange={(e) => setFormData({ ...formData, bypass_time_requirement: e.target.checked })}
-                                />
-                            </div>
-                            <div className="ml-3 text-sm">
-                                <label htmlFor="bypass_time_requirement" className="font-medium text-gray-700">Allow Immediate Submission (Bypass Time Requirement)</label>
-                                <p className="text-gray-500">If checked, students can submit assignments immediately without waiting for the minimum time or watching the video.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="sm:col-span-6">
-                        <label htmlFor="total_assignments" className="block text-sm font-bold text-gray-700">
-                            Total Assignments Required
-                        </label>
-                        <div className="mt-1">
-                            <input
-                                type="number"
-                                name="total_assignments"
-                                id="total_assignments"
-                                min="1"
-                                max="10"
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
-                                value={isNaN(formData.total_assignments as number) ? '' : (formData.total_assignments || 1)}
-                                onChange={(e) => {
-                                    const val = e.target.value === '' ? NaN : parseInt(e.target.value);
-                                    setFormData({ ...formData, total_assignments: val });
-                                }}
-                            />
-                        </div>
-                        <p className="mt-1 text-xs text-gray-400 italic">How many separate assignments must the student submit for this phase?</p>
-                    </div>
-
-                    <div className="sm:col-span-6 border-t border-gray-100 pt-6">
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
-                            <div>
-                                <h3 className="text-sm font-bold text-gray-900">Mandatory Phase</h3>
-                                <p className="text-xs text-gray-500">If disabled, students won't be revoked for missing this deadline.</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setFormData({ ...formData, is_mandatory: !formData.is_mandatory })}
-                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ring-2 ring-transparent ring-offset-2 ${formData.is_mandatory ? 'bg-blue-600' : 'bg-gray-200'}`}
-                            >
-                                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.is_mandatory ? 'translate-x-5' : 'translate-x-0'}`} />
-                            </button>
-                        </div>
-                    </div>
+                    <AssignmentSettings formData={formData} setFormData={setFormData as any} />
 
                     <div className="sm:col-span-6 border-t border-gray-100 pt-6">
                         <h3 className="text-lg font-medium text-gray-900 flex items-center mb-4">

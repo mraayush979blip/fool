@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const NavigationMenu = dynamic(() => import('@/components/NavigationMenu'), { ssr: false });
 const InstallPWA = dynamic(() => import('@/components/InstallPWA'), { ssr: false });
+const FullscreenToggle = dynamic(() => import('@/components/FullscreenToggle'), { ssr: false });
 
 
 export default function StudentLayout({
@@ -30,9 +31,10 @@ export default function StudentLayout({
         if (saved) setLocalTheme(saved);
     }, []);
 
-    const MobileNavLink = ({ href, icon: Icon, label, isActive }: { href: string; icon: any; label: string; isActive: boolean }) => (
+    const MobileNavLink = ({ href, icon: Icon, label, isActive, id }: { href: string; icon: any; label: string; isActive: boolean; id?: string }) => (
         <Link
             href={href}
+            id={id}
             className={cn(
                 "flex flex-col items-center justify-center w-full h-full space-y-1 relative transition-all duration-300",
                 isActive
@@ -59,6 +61,8 @@ export default function StudentLayout({
     const isHelpPage = pathname === '/student/help';
     const isPhasePage = pathname?.startsWith('/student/phase/');
     const isTeamPage = pathname === '/student/team';
+    const isRevoked = user?.status === 'revoked';
+    const hideNavigation = isHelpPage || isPhasePage || isTeamPage || isRevoked;
     const isFullscreen = isHelpPage || isPhasePage || isTeamPage;
     const currentTheme = user?.equipped_theme || localTheme || 'theme-light';
 
@@ -75,15 +79,15 @@ export default function StudentLayout({
                 data-theme={currentTheme}
                 className={cn(
                     "min-h-screen flex flex-col transition-colors duration-500 font-sans bg-background text-foreground",
-                    !isFullscreen ? 'pb-20 md:pb-0' : ''
+                    !hideNavigation ? 'pb-20 md:pb-0' : ''
                 )}
             >
-                {!isFullscreen && (
+                {!hideNavigation && (
                     <nav className="sticky top-0 border-b border-card-border transition-all duration-300 z-50 backdrop-blur-xl bg-card/80 relative">
                         <div className="max-w-7xl mx-auto px-6 relative z-10">
                             <div className="flex justify-between h-20">
                                 <div className="flex items-center space-x-10">
-                                    <Link href="/student" className="flex items-center space-x-3 group text-foreground">
+                                    <Link href="/student" id="nav-logo" className="flex items-center space-x-3 group text-foreground">
                                         <div className="w-10 h-10 bg-primary rounded-xl rotate-45 flex items-center justify-center shadow-lg shadow-primary/30 group-hover:rotate-[135deg] transition-all duration-700">
                                             <div className="-rotate-45 group-hover:-rotate-[135deg] transition-all duration-700">
                                                 <Zap className="h-5 w-5 text-white fill-white" />
@@ -103,6 +107,7 @@ export default function StudentLayout({
                                                 <Link
                                                     key={item.href}
                                                     href={item.href}
+                                                    id={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
                                                     className={cn(
                                                         "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all relative group",
                                                         isActive
@@ -127,9 +132,12 @@ export default function StudentLayout({
                                 </div>
 
                                 <div className="flex items-center space-x-6">
-                                    <InstallPWA />
+                                    <div className="flex items-center gap-2">
+                                        <FullscreenToggle />
+                                        <InstallPWA />
+                                    </div>
 
-                                    <div className="hidden lg:flex items-center gap-4 pl-8 border-l border-card-border">
+                                    <div className="hidden lg:flex items-center gap-4 pl-8 border-l border-card-border" id="nav-profile">
                                         <div className="text-right">
                                             <p className="text-sm font-black tracking-tight truncate max-w-[150px] text-foreground">
                                                 {user?.name || 'Student'}
@@ -140,18 +148,20 @@ export default function StudentLayout({
                                         </div>
                                     </div>
 
-                                    <NavigationMenu />
+                                    <div id="nav-menu">
+                                        <NavigationMenu />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </nav>
                 )}
 
-                <main className={cn("flex-1", !isFullscreen ? 'py-10' : '')}>
+                <main className={cn("flex-1", !hideNavigation ? 'py-10' : '')}>
                     {children}
                 </main>
 
-                {!isFullscreen && (
+                {!hideNavigation && (
                     <>
                         <footer className="hidden md:block py-16 border-t border-card-border transition-colors mt-auto bg-card text-foreground relative overflow-hidden">
                             <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
@@ -185,6 +195,7 @@ export default function StudentLayout({
                                         icon={item.icon}
                                         label={item.label.split(' ')[0]}
                                         isActive={pathname === item.href}
+                                        id={`nav-${item.label.toLowerCase().replace(' ', '-')}-mobile`}
                                     />
                                 ))}
                             </div>

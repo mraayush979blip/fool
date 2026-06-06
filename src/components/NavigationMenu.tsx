@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogOut, Palette, ChevronRight, Sun, Zap, Check, Users, Bug } from 'lucide-react';
+import { Menu, X, LogOut, Palette, ChevronRight, Sun, Zap, Check, Users, Bug, HelpCircle, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -24,7 +24,7 @@ export default function NavigationMenu() {
 
     const currentTheme = user?.equipped_theme || 'theme-light';
 
-    const menuVariants = {
+    const menuVariants: any = {
         closed: {
             opacity: 0,
             scale: 0.95,
@@ -92,6 +92,20 @@ export default function NavigationMenu() {
 
                                 <div className="space-y-1">
                                     <Link
+                                        href="/student/tutorial"
+                                        onClick={() => setIsOpen(false)}
+                                        className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-primary/5 text-muted hover:text-primary transition-all group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20">
+                                                <HelpCircle className="h-4 w-4 text-primary" />
+                                            </div>
+                                            <span className="text-xs font-bold tracking-tight">How to Use</span>
+                                        </div>
+                                        <ChevronRight className="h-3.5 w-3.5 opacity-0 group-hover:translate-x-0.5 transition-all" />
+                                    </Link>
+
+                                    <Link
                                         href="/student/report"
                                         onClick={() => setIsOpen(false)}
                                         className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-primary/5 text-muted hover:text-primary transition-all group"
@@ -105,19 +119,13 @@ export default function NavigationMenu() {
                                         <ChevronRight className="h-3.5 w-3.5 opacity-0 group-hover:translate-x-0.5 transition-all" />
                                     </Link>
 
-                                    <Link
-                                        href="/student/team"
-                                        onClick={() => setIsOpen(false)}
-                                        className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-primary/5 text-muted hover:text-primary transition-all group"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20">
-                                                <Users className="h-4 w-4 text-primary" />
-                                            </div>
-                                            <span className="text-xs font-bold tracking-tight">Our Team</span>
+                                    <div className="w-full flex items-center justify-center p-4 rounded-xl border border-primary/10 bg-gradient-to-r from-primary/5 to-transparent relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 blur-xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                        <div className="flex items-center gap-2">
+                                            <Shield className="h-4 w-4 text-primary" />
+                                            <span className="text-xs font-black tracking-[0.2em] text-primary uppercase">LEVELONE</span>
                                         </div>
-                                        <ChevronRight className="h-3.5 w-3.5 opacity-0 group-hover:translate-x-0.5 transition-all" />
-                                    </Link>
+                                    </div>
 
                                     <button
                                         onClick={() => {
@@ -135,38 +143,7 @@ export default function NavigationMenu() {
                                     </button>
                                 </div>
 
-                                <div className="h-px bg-card-border mx-2" />
 
-                                {/* Themes */}
-                                <div className="px-1">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-muted mb-4 flex items-center gap-2">
-                                        <Palette className="w-3 h-3" /> Appearance
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {themes.map((themeObj) => (
-                                            <button
-                                                key={themeObj.id}
-                                                onClick={() => updateTheme(themeObj.id)}
-                                                className={cn(
-                                                    "flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all relative group",
-                                                    currentTheme === themeObj.id
-                                                        ? "bg-primary/10 border-primary text-primary shadow-sm shadow-primary/10"
-                                                        : "bg-background border-card-border text-muted hover:border-primary/30 hover:text-foreground"
-                                                )}
-                                            >
-                                                <themeObj.icon className={cn("w-4 h-4 transition-transform", currentTheme === themeObj.id ? "scale-110" : "group-hover:scale-110")} />
-                                                <span className="text-[9px] font-black uppercase tracking-widest">{themeObj.name}</span>
-                                                {currentTheme === themeObj.id && (
-                                                    <div className="absolute top-1 right-1">
-                                                        <div className="bg-primary p-0.5 rounded-full">
-                                                            <Check className="w-2.5 h-2.5 text-white" />
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
                             </div>
                             <div className="pt-2 text-center">
                                 <p className="text-[8px] font-black uppercase tracking-widest text-muted opacity-40">Levelone Node v2.5.5</p>

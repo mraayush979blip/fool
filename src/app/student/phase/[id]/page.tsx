@@ -30,6 +30,9 @@ import { isValidGitHubUrl, isValidFileSize, formatFileSize, isValidAssignmentFil
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PremiumPlayer from '@/components/PremiumPlayer';
 import { motion, AnimatePresence } from 'framer-motion';
+import ExpandableText from '@/components/ui/ExpandableText';
+import PhasePathSelector from './components/PhasePathSelector';
+import SubmissionPortal from './components/SubmissionPortal';
 
 interface PhasePageProps {
     params: Promise<{ id: string }>;
@@ -82,12 +85,24 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
             if (error) throw error;
 
+            const { data: extData } = await supabase
+                .from('phase_extensions')
+                .select('extended_deadline')
+                .eq('phase_id', id)
+                .eq('student_id', user?.id)
+                .single();
+
+            const phaseData = data as any;
+            if (extData) {
+                phaseData.extended_deadline = extData.extended_deadline;
+            }
+
             const status = getPhaseStatus(data.start_date, data.end_date, data.is_paused);
             if (status === 'upcoming' || status === 'paused') {
                 router.push('/student');
                 return null;
             }
-            return data;
+            return phaseData;
         },
         enabled: !!id && !!user,
         staleTime: 5 * 60 * 1000,
@@ -252,7 +267,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
     // --- Derived State ---
     const isPastDeadline = phase ? (() => {
         const now = new Date();
-        const endDate = new Date(phase.end_date);
+        const endDate = new Date(phase.extended_deadline || phase.end_date);
         endDate.setHours(23, 59, 59, 999);
         return now > endDate;
     })() : false;
@@ -527,51 +542,11 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
     if (phase.has_multiple_options && !selectedOptionId) {
         return (
-            <div className="max-w-4xl mx-auto px-6 py-12 space-y-10">
-                <Link href="/student" className="inline-flex items-center gap-2 text-muted hover:text-primary transition-colors mb-8">
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="text-sm font-bold">Back to Dashboard</span>
-                </Link>
-
-                <div className="text-center space-y-4">
-                    <h1 className="text-3xl md:text-5xl font-black tracking-tight text-foreground">Select Your Study Path</h1>
-                    <p className="text-muted text-lg max-w-2xl mx-auto">This phase offers multiple specialized video lessons and assignments. Please choose the one that best suits your current learning needs.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
-                    {phase.options?.map((option: any) => (
-                        <motion.button
-                            key={option.id}
-                            whileHover={{ y: -5 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => handleSelectOption(option.id)}
-                            disabled={isSelectingOption}
-                            className="bg-card p-8 rounded-[2rem] border border-card-border shadow-sm hover:border-primary/30 text-left transition-all group relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors" />
-                            
-                            <div className="relative space-y-4">
-                                <div className="p-4 bg-primary/10 rounded-2xl w-fit">
-                                    <Video className="w-6 h-6 text-primary" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{option.title}</h3>
-                                    <p className="text-sm font-medium text-muted line-clamp-2">Complete the specialized assignment and video lesson for this track.</p>
-                                </div>
-                                <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-primary pt-4 group-hover:translate-x-1 transition-transform">
-                                    Select Path <Zap className="ml-2 w-3.5 h-3.5 fill-current" />
-                                </div>
-                            </div>
-                        </motion.button>
-                    ))}
-                </div>
-
-                {isSelectingOption && (
-                    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-                        <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                    </div>
-                )}
-            </div>
+            <PhasePathSelector 
+                phase={phase} 
+                isSelectingOption={isSelectingOption} 
+                onSelectOption={handleSelectOption} 
+            />
         );
     }
 
@@ -617,10 +592,16 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                             <div className="flex items-center gap-3 mb-6">
                                 <span className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest border border-primary/20">Phase {phase.phase_number}</span>
                                 <div className="h-1 w-1 rounded-full bg-card-border" />
-                                <span className="text-xs font-bold text-muted">Deadline: {new Date(phase.end_date).toLocaleDateString()}</span>
+                                {phase.extended_deadline ? (
+                                    <span className="text-xs font-bold text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]">
+                                        Extended Deadline: {new Date(phase.extended_deadline).toLocaleDateString()}
+                                    </span>
+                                ) : (
+                                    <span className="text-xs font-bold text-muted">Deadline: {new Date(phase.end_date).toLocaleDateString()}</span>
+                                )}
                             </div>
                             <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-4 text-foreground">{phase.title}</h1>
-                            <p className="text-muted leading-relaxed text-lg">{phase.description}</p>
+                            <ExpandableText text={phase.description} maxLength={150} className="text-muted leading-relaxed text-lg" />
                         </div>
 
                         {videoId ? (
@@ -670,175 +651,19 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 </div>
 
                 {/* Submission Sidebar */}
-                <div className="lg:col-span-4 space-y-8">
-                    <aside className="bg-card p-8 rounded-[2.5rem] shadow-sm border border-card-border sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="bg-primary p-2 rounded-xl shadow-lg shadow-primary/20">
-                                <Send className="h-4 w-4 text-white" />
-                            </div>
-                            <h2 className="text-xl font-bold text-foreground">Submission Portal</h2>
-                        </div>
-
-                        {!isUnlocked && !isPastDeadline && (
-                            <div className="mb-10 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center text-center">
-                                <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center shadow-sm mb-4">
-                                    <Lock className="h-6 w-6 text-slate-400" />
-                                </div>
-                                <h3 className="text-sm font-bold mb-2">Submissions Locked</h3>
-                                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider leading-relaxed">
-                                    Please complete the required viewing time to enable assignment submission.
-                                </p>
-                            </div>
-                        )}
-
-                        {isPastDeadline && (
-                            <div className="mb-10 p-6 bg-red-50 dark:bg-red-950/20 rounded-2xl border border-red-100 dark:border-red-500/10 flex flex-col items-center text-center">
-                                <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center shadow-sm mb-4 text-red-500">
-                                    <AlertCircle className="h-6 w-6" />
-                                </div>
-                                <h3 className="text-sm font-bold text-red-600 mb-2">Deadline Passed</h3>
-                                <p className="text-[11px] font-medium text-red-500 uppercase tracking-wider leading-relaxed">
-                                    The submission window for this phase has closed.
-                                </p>
-                            </div>
-                        )}
-
-                        <div className="space-y-12">
-                            {Array.from({ length: phase.total_assignments || 1 }, (_, i) => i + 1).map((idx) => {
-                                const data = formData[idx] || {
-                                    submissionType: 'github',
-                                    githubUrl: '',
-                                    notes: '',
-                                    selectedFile: null,
-                                    existingFileUrl: null
-                                };
-                                const isSubmitted = !!submissions[idx];
-
-                                return (
-                                    <div key={idx} className={cn(
-                                        "space-y-6 pb-10",
-                                        idx < (phase.total_assignments || 1) ? 'border-b border-slate-100 dark:border-slate-800' : ''
-                                    )}>
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-sm font-black uppercase tracking-tighter flex items-center gap-2">
-                                                Assignment Unit {idx.toString().padStart(2, '0')}
-                                                {isSubmitted && (
-                                                    <span className="flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                                )}
-                                            </h3>
-                                            {isSubmitted && (
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/10">Verified</span>
-                                            )}
-                                        </div>
-
-                                        <form onSubmit={(e) => handleSubmit(e, idx)} className="space-y-6">
-                                            {currentAllowedType === 'both' && (
-                                                <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFormData(p => ({ ...p, [idx]: { ...p[idx], submissionType: 'github' } }))}
-                                                        className={cn(
-                                                            "flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all",
-                                                            data.submissionType === 'github' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'
-                                                        )}
-                                                    >
-                                                        Source Link
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFormData(p => ({ ...p, [idx]: { ...p[idx], submissionType: 'file' } }))}
-                                                        className={cn(
-                                                            "flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all",
-                                                            data.submissionType === 'file' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'
-                                                        )}
-                                                    >
-                                                        Local File
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            <div className="space-y-4">
-                                                {data.submissionType === 'github' ? (
-                                                    <div className="relative group">
-                                                        <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-                                                            <Github className="h-4 w-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                                                        </div>
-                                                        <input
-                                                            type="url"
-                                                            placeholder="GitHub Repository URL"
-                                                            value={data.githubUrl}
-                                                            onChange={(e) => setFormData(p => ({ ...p, [idx]: { ...p[idx], githubUrl: e.target.value } }))}
-                                                            className="w-full !pl-10 text-sm font-medium"
-                                                            disabled={!isUnlocked || isPastDeadline}
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <div className={cn(
-                                                        "group relative border-2 border-dashed rounded-2xl p-6 transition-all text-center",
-                                                        (!isUnlocked || isPastDeadline) ? 'opacity-50 grayscale bg-slate-50' : 'hover:border-indigo-600/30 hover:bg-indigo-600/[0.02]',
-                                                        data.selectedFile || data.existingFileUrl ? 'border-emerald-500/30 bg-emerald-500/[0.02]' : 'border-slate-200 dark:border-slate-800'
-                                                    )}>
-                                                        {data.selectedFile ? (
-                                                            <div className="flex items-center justify-between gap-4">
-                                                                <div className="flex items-center gap-3 overflow-hidden">
-                                                                    <FileText className="h-5 w-5 text-emerald-500 shrink-0" />
-                                                                    <span className="text-sm font-bold truncate">{data.selectedFile.name}</span>
-                                                                </div>
-                                                                <button onClick={() => handleRemoveFile(idx)} className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-lg transition-all"><X className="h-4 w-4" /></button>
-                                                            </div>
-                                                        ) : (
-                                                            <label className={cn("cursor-pointer block", (!isUnlocked || isPastDeadline) && 'pointer-events-none')}>
-                                                                <input type="file" className="hidden" disabled={!isUnlocked || isPastDeadline} onChange={(e) => handleFileSelect(e, idx)} />
-                                                                <Upload className="mx-auto h-8 w-8 text-slate-300 mb-3 group-hover:text-indigo-600 group-hover:scale-110 transition-all" />
-                                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Select Project File</p>
-                                                            </label>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                <textarea
-                                                    placeholder="Implementation notes (optional)..."
-                                                    value={data.notes}
-                                                    onChange={(e) => setFormData(p => ({ ...p, [idx]: { ...p[idx], notes: e.target.value } }))}
-                                                    className="w-full h-24 text-sm font-medium resize-none pb-safe"
-                                                    disabled={!isUnlocked || isPastDeadline}
-                                                />
-                                            </div>
-
-                                            <AnimatePresence>
-                                                {data.error && (
-                                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 text-red-600 rounded-xl border border-red-100 dark:border-red-500/10">
-                                                        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                                                        <p className="text-[11px] font-bold uppercase tracking-tight leading-relaxed">{data.error}</p>
-                                                    </motion.div>
-                                                )}
-                                                {data.success && (
-                                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="flex items-start gap-3 p-4 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 rounded-xl border border-emerald-100 dark:border-emerald-500/10">
-                                                        <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
-                                                        <p className="text-[11px] font-bold uppercase tracking-tight leading-relaxed">{data.success}</p>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-
-                                            <button
-                                                type="submit"
-                                                disabled={submittingIndex === idx || !isUnlocked || isPastDeadline}
-                                                className="w-full h-14 bg-indigo-600 text-white font-black uppercase tracking-[0.15em] text-[11px] rounded-2xl hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98] flex items-center justify-center relative overflow-hidden group"
-                                            >
-                                                <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
-                                                {submittingIndex === idx ? (
-                                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                                ) : (
-                                                    <span>{isSubmitted ? 'Update Engineering Submission' : 'Commit Final Assignment'}</span>
-                                                )}
-                                            </button>
-                                        </form>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </aside>
-                </div>
+                <SubmissionPortal 
+                    phase={phase}
+                    isUnlocked={isUnlocked}
+                    isPastDeadline={isPastDeadline}
+                    formData={formData}
+                    setFormData={setFormData}
+                    submissions={submissions}
+                    currentAllowedType={currentAllowedType}
+                    handleFileSelect={handleFileSelect}
+                    handleRemoveFile={handleRemoveFile}
+                    handleSubmit={handleSubmit}
+                    submittingIndex={submittingIndex}
+                />
             </div>
         </div>
     );
