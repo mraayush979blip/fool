@@ -36,9 +36,9 @@ export const metadata: Metadata = {
   title: "Levelone",
   description: "Phase-Based Learning Management System - sab ka sath sab vikas",
   icons: {
-    icon: '/icon-192.png',
-    apple: '/icon-ninja.png',
-    shortcut: '/icon-192.png',
+    icon: '/icon-ninja-round.png',
+    apple: '/icon-ninja-round.png',
+    shortcut: '/icon-ninja-round.png',
   },
 };
 
@@ -53,8 +53,8 @@ export default function RootLayout({
         {/* Force fresh builds and purge Edge caches */}
         <meta name="build-id" content={Date.now().toString()} />
         <link rel="manifest" href="/manifest.webmanifest?v=2" />
-        <link rel="icon" type="image/png" href="/icon-192.png" />
-        <link rel="apple-touch-icon" href="/icon-ninja.png" />
+        <link rel="icon" type="image/png" href="/icon-ninja-round.png" />
+        <link rel="apple-touch-icon" href="/icon-ninja-round.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
