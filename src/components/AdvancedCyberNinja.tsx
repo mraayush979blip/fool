@@ -59,6 +59,43 @@ const playSwordSwoosh = () => {
     }
 };
 
+const playKnifeSound = () => {
+    try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+
+        // Metallic "ting/shing" sound
+        const osc = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        // High frequency for metallic sound
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(4500, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.15);
+
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(6000, ctx.currentTime);
+        osc2.frequency.exponentialRampToValueAtTime(1500, ctx.currentTime + 0.15);
+
+        // Very quick sharp envelope
+        gainNode.gain.setValueAtTime(0, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+
+        osc.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        osc.start();
+        osc2.start();
+        osc.stop(ctx.currentTime + 0.15);
+        osc2.stop(ctx.currentTime + 0.15);
+    } catch (e) {
+        console.error("Audio playback failed", e);
+    }
+};
+
 export default function AdvancedCyberNinja({ phase }: { phase: 'animating' | 'slashed' | 'bloody' | 'hidden' }) {
     const isAttacking = phase === 'slashed' || phase === 'bloody';
     const isReadying = phase === 'animating';
@@ -69,9 +106,17 @@ export default function AdvancedCyberNinja({ phase }: { phase: 'animating' | 'sl
         }
     }, [isAttacking]);
 
+    const handleNinjaClick = () => {
+        playKnifeSound();
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(40); // Quick sharp vibration
+        }
+    };
+
     return (
         <motion.div
-            className="relative w-80 h-80 md:w-[450px] md:h-[450px]"
+            onClick={handleNinjaClick}
+            className="relative w-80 h-80 md:w-[450px] md:h-[450px] cursor-crosshair"
             initial={{ y: 200, opacity: 0, scale: 0.8 }}
             animate={{
                 y: isAttacking ? 50 : 0,
