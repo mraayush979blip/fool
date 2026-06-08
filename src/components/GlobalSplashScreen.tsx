@@ -4,15 +4,15 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function GlobalSplashScreen() {
-    const [phase, setPhase] = useState<'initial' | 'slash' | 'bloody' | 'hidden'>('initial');
+    const [phase, setPhase] = useState<'rolling' | 'standing' | 'readying' | 'attacking' | 'slashed' | 'bloody' | 'hidden'>('rolling');
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
-        // Create audio element
-        audioRef.current = new Audio('/sounds/sword.mp3');
+        // We use the generated .wav sword sound
+        audioRef.current = new Audio('/sounds/sword.wav');
         audioRef.current.volume = 1.0;
 
-        // Try to request fullscreen (might be blocked by browser without user gesture, but we try)
+        // Try to request fullscreen silently
         try {
             if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(() => {});
@@ -20,33 +20,102 @@ export default function GlobalSplashScreen() {
         } catch (e) {}
 
         // Timing sequence
-        const slashTimer = setTimeout(() => {
-            setPhase('slash');
-            if (audioRef.current) {
-                // Play sound without asking permission
-                audioRef.current.play().catch(e => console.warn('Audio play blocked:', e));
-            }
+        // 0 - 800ms: Rolling in
+        const standTimer = setTimeout(() => {
+            setPhase('standing');
         }, 800);
 
-        const bloodyTimer = setTimeout(() => {
-            setPhase('bloody');
+        // 800 - 1300ms: Standing, then readying sword
+        const readyTimer = setTimeout(() => {
+            setPhase('readying');
         }, 1300);
 
+        // 1300 - 1600ms: Attacking lunge
+        const attackTimer = setTimeout(() => {
+            setPhase('attacking');
+        }, 1800);
+
+        // 1600ms: The slash impacts the screen
+        const slashTimer = setTimeout(() => {
+            setPhase('slashed');
+            if (audioRef.current) {
+                audioRef.current.play().catch(e => console.warn('Audio play blocked:', e));
+            }
+        }, 1900);
+
+        // 2200ms: Blood and branding
+        const bloodyTimer = setTimeout(() => {
+            setPhase('bloody');
+        }, 2500);
+
+        // 4500ms: Fade out
         const hideTimer = setTimeout(() => {
             setPhase('hidden');
-        }, 4000);
+        }, 4500);
 
         return () => {
+            clearTimeout(standTimer);
+            clearTimeout(readyTimer);
+            clearTimeout(attackTimer);
             clearTimeout(slashTimer);
             clearTimeout(bloodyTimer);
             clearTimeout(hideTimer);
-            if (audioRef.current) {
-                audioRef.current.pause();
-            }
         };
     }, []);
 
     if (phase === 'hidden') return null;
+
+    // Animation variants for the Ninja
+    const ninjaVariants = {
+        rolling: {
+            x: -300,
+            y: 100,
+            rotate: -360,
+            scale: 0.5,
+            opacity: 0,
+        },
+        standing: {
+            x: 0,
+            y: 0,
+            rotate: 0,
+            scale: 0.8,
+            opacity: 1,
+            transition: { type: "spring", stiffness: 100, damping: 15 }
+        },
+        readying: {
+            x: -20,
+            y: 10,
+            rotate: -15,
+            scale: 0.85,
+            opacity: 1,
+            transition: { duration: 0.4, ease: "easeOut" }
+        },
+        attacking: {
+            x: 100,
+            y: -50,
+            rotate: 45,
+            scale: 1.5,
+            opacity: 1,
+            filter: 'brightness(1.5)',
+            transition: { duration: 0.1, ease: "easeIn" }
+        },
+        slashed: {
+            x: 150,
+            y: -20,
+            rotate: 45,
+            scale: 1.2,
+            opacity: 0, // Fade out after attacking
+            filter: 'brightness(0.5)',
+            transition: { duration: 0.4, ease: "easeOut" }
+        },
+        bloody: {
+            x: 150,
+            y: -20,
+            rotate: 45,
+            scale: 1.2,
+            opacity: 0,
+        }
+    };
 
     return (
         <AnimatePresence>
@@ -56,80 +125,92 @@ export default function GlobalSplashScreen() {
                 transition={{ duration: 0.8, ease: "easeInOut" }}
                 className="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-[#030303] overflow-hidden"
             >
-                {/* Background effects */}
+                {/* Background Blood Moon / Aura */}
                 <div className="absolute inset-0 z-0">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-red-900/10 blur-[100px] rounded-full animate-pulse-slow" />
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: phase === 'bloody' ? 1 : 0 }}
+                        transition={{ duration: 1 }}
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-red-900/20 blur-[120px] rounded-full" 
+                    />
                 </div>
 
-                <div className="relative z-10 flex flex-col items-center w-full h-full justify-center">
+                <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
                     
                     {/* The Ninja */}
                     <motion.div
-                        initial={{ scale: 0.8, y: 20, opacity: 0, filter: 'brightness(1)' }}
-                        animate={{ 
-                            scale: phase === 'slash' ? 1.1 : 1, 
-                            y: 0, 
-                            opacity: 1,
-                            filter: phase === 'slash' ? 'brightness(1.5)' : 'brightness(1)'
-                        }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                        className="relative"
+                        variants={ninjaVariants}
+                        initial="rolling"
+                        animate={phase}
+                        className="relative z-30"
                     >
-                        {/* Flash effect when slashing */}
-                        {phase === 'slash' && (
-                            <div className="absolute inset-0 bg-white blur-[20px] opacity-80 rounded-full animate-ping" style={{ animationDuration: '0.3s' }} />
-                        )}
-                        
                         <img 
                             src="/icon-ninja-round.png" 
                             alt="Levelone Ninja" 
-                            className={`w-48 h-48 object-contain transition-all duration-200 ${phase === 'slash' ? 'drop-shadow-[0_0_50px_rgba(220,38,38,0.8)]' : 'drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]'}`}
+                            className="w-48 h-48 object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                         />
                     </motion.div>
 
-                    {/* The Sword Slash */}
-                    {phase !== 'initial' && (
-                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-20">
+                    {/* The Sword Scratch / Slash */}
+                    {(phase === 'slashed' || phase === 'bloody') && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
+                            {/* Primary Deep Scratch */}
                             <motion.div 
-                                initial={{ scaleX: 0, opacity: 1, rotate: -25 }}
-                                animate={{ scaleX: 1, opacity: 0 }}
-                                transition={{ duration: 0.5, ease: "easeOut" }}
+                                initial={{ scaleX: 0, opacity: 1 }}
+                                animate={{ scaleX: 1, opacity: phase === 'bloody' ? 0.2 : 1 }}
+                                transition={{ duration: 0.15, ease: "easeOut" }}
                                 style={{ originX: 0 }}
-                                className="w-[150vw] h-2 bg-white shadow-[0_0_30px_#fff,0_0_60px_#dc2626] rounded-full"
+                                className="absolute w-[120vw] h-3 bg-white shadow-[0_0_30px_#fff,0_0_60px_#dc2626,inset_0_0_10px_#dc2626] rounded-full rotate-[-30deg]"
                             />
-                        </div>
-                    )}
-                    
-                    {/* Secondary Slash */}
-                    {phase !== 'initial' && (
-                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-20">
+                            {/* Secondary Scratch */}
                             <motion.div 
-                                initial={{ scaleX: 0, opacity: 1, rotate: 15 }}
-                                animate={{ scaleX: 1, opacity: 0 }}
-                                transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
+                                initial={{ scaleX: 0, opacity: 1 }}
+                                animate={{ scaleX: 1, opacity: phase === 'bloody' ? 0 : 0.8 }}
+                                transition={{ duration: 0.1, delay: 0.05, ease: "easeOut" }}
                                 style={{ originX: 0 }}
-                                className="w-[150vw] h-1.5 bg-white shadow-[0_0_20px_#fff,0_0_40px_#dc2626] rounded-full"
+                                className="absolute w-[100vw] h-1.5 bg-white shadow-[0_0_20px_#fff,0_0_40px_#dc2626] rounded-full rotate-[-25deg] translate-y-8"
+                            />
+                            {/* Third Scratch */}
+                            <motion.div 
+                                initial={{ scaleX: 0, opacity: 1 }}
+                                animate={{ scaleX: 1, opacity: phase === 'bloody' ? 0 : 0.6 }}
+                                transition={{ duration: 0.2, delay: 0.1, ease: "easeOut" }}
+                                style={{ originX: 0 }}
+                                className="absolute w-[110vw] h-1 bg-white shadow-[0_0_15px_#fff,0_0_30px_#dc2626] rounded-full rotate-[-35deg] -translate-y-12"
+                            />
+                            
+                            {/* Impact Flash */}
+                            <motion.div 
+                                initial={{ opacity: 1, scale: 1 }}
+                                animate={{ opacity: 0, scale: 3 }}
+                                transition={{ duration: 0.5, ease: "easeOut" }}
+                                className="absolute w-64 h-64 bg-white mix-blend-overlay blur-[20px] rounded-full"
                             />
                         </div>
                     )}
 
                     {/* Bloody Branding */}
-                    <div className="mt-12 h-24 flex items-center justify-center">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40">
                         {phase === 'bloody' && (
                             <motion.div
-                                initial={{ scale: 1.5, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ type: "spring", stiffness: 200, damping: 10 }}
+                                initial={{ scale: 2, opacity: 0, filter: 'blur(20px)' }}
+                                animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
+                                transition={{ type: "spring", stiffness: 150, damping: 12 }}
                                 className="relative flex flex-col items-center"
                             >
-                                <h1 className="text-5xl md:text-7xl font-black tracking-[-0.05em] text-red-600 drop-shadow-[0_0_15px_rgba(220,38,38,0.8)]" style={{ fontFamily: 'impact, sans-serif' }}>
-                                    LEVEL<span className="text-white drop-shadow-none">ONE</span>
+                                <h1 className="text-6xl md:text-8xl font-black tracking-[-0.05em] text-red-600 drop-shadow-[0_0_25px_rgba(220,38,38,0.9)]" style={{ fontFamily: 'impact, sans-serif' }}>
+                                    LEVEL<span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">ONE</span>
                                 </h1>
                                 
                                 {/* Blood drips simulation */}
-                                <div className="absolute top-full left-1/4 w-1 bg-red-600 rounded-b-full shadow-[0_0_5px_#dc2626]" style={{ animation: 'bloodDrip 2s ease-in forwards' }} />
-                                <div className="absolute top-full left-1/2 w-1.5 bg-red-600 rounded-b-full shadow-[0_0_5px_#dc2626]" style={{ animation: 'bloodDrip 1.5s ease-in forwards 0.2s' }} />
-                                <div className="absolute top-full right-1/4 w-1 bg-red-600 rounded-b-full shadow-[0_0_5px_#dc2626]" style={{ animation: 'bloodDrip 2.2s ease-in forwards 0.1s' }} />
+                                <div className="absolute top-[80%] left-[20%] w-1.5 bg-red-600 rounded-b-full shadow-[0_0_8px_#dc2626]" style={{ animation: 'bloodDrip 2s ease-in forwards' }} />
+                                <div className="absolute top-[80%] left-[45%] w-2 bg-red-600 rounded-b-full shadow-[0_0_10px_#dc2626]" style={{ animation: 'bloodDrip 1.5s ease-in forwards 0.3s' }} />
+                                <div className="absolute top-[80%] right-[30%] w-1.5 bg-red-600 rounded-b-full shadow-[0_0_8px_#dc2626]" style={{ animation: 'bloodDrip 2.2s ease-in forwards 0.1s' }} />
+                                <div className="absolute top-[80%] right-[10%] w-1 bg-red-600 rounded-b-full shadow-[0_0_5px_#dc2626]" style={{ animation: 'bloodDrip 1.8s ease-in forwards 0.5s' }} />
+                                
+                                <p className="mt-4 text-xs font-black uppercase tracking-[0.4em] text-red-500/80 drop-shadow-[0_0_5px_rgba(220,38,38,0.5)]">
+                                    Prepare to Strike
+                                </p>
                             </motion.div>
                         )}
                     </div>
@@ -138,9 +219,9 @@ export default function GlobalSplashScreen() {
                 {/* CSS for Blood Drips */}
                 <style dangerouslySetInnerHTML={{__html: `
                     @keyframes bloodDrip {
-                        0% { height: 0px; opacity: 1; }
-                        80% { height: 60px; opacity: 1; }
-                        100% { height: 80px; opacity: 0; }
+                        0% { height: 0px; opacity: 1; transform: translateY(0); }
+                        80% { height: 80px; opacity: 1; transform: translateY(0); }
+                        100% { height: 120px; opacity: 0; transform: translateY(20px); }
                     }
                 `}} />
             </motion.div>
