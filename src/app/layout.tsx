@@ -97,8 +97,26 @@ export default function RootLayout({
 
             {/* Page content with its own loading state */}
             <Suspense fallback={
-              <div className="fixed inset-0 flex items-center justify-center bg-background z-[9999]">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#050507] z-[9999]">
+                <div className="relative flex flex-col items-center animate-fade-in-up">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-blue-600/30 blur-[60px] rounded-full animate-pulse" />
+                  
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
+                    src="/icon-ninja-round.png" 
+                    alt="Levelone Ninja" 
+                    className="w-32 h-32 relative z-10 rounded-full shadow-[0_0_40px_rgba(59,130,246,0.3)] animate-float"
+                  />
+                  
+                  <h1 className="mt-8 text-3xl font-black tracking-[-0.05em] text-white relative z-10">
+                    LEVELONE
+                  </h1>
+                  <div className="mt-4 flex gap-2 relative z-10">
+                    <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
               </div>
             }>
               {children}

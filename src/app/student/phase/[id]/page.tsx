@@ -72,10 +72,9 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
         queryKey: ['phase', id, user?.id],
         queryFn: async () => {
             const { data: isRevoked } = await supabase.rpc('check_and_revoke_self');
-            if (isRevoked) {
-                window.location.href = '/revoked';
-                return null;
-            }
+            // If the user is revoked, we STILL want them to be able to fetch the phase
+            // because they need to complete it to restore their access.
+            // The dashboard/layout blocks them from accessing other things.
 
             const { data, error } = await supabase
                 .from('phases')
@@ -281,7 +280,11 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 d.setHours(23, 59, 59, 999);
                 return d;
             })();
-        return now > deadline;
+            
+        // Allow a 30-day grace period after the deadline for revoked students to recover access
+        const graceDeadline = new Date(deadline);
+        graceDeadline.setDate(graceDeadline.getDate() + 30);
+        return now > graceDeadline;
     })() : false;
 
     // --- Handlers ---
