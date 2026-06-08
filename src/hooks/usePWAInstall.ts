@@ -57,6 +57,6 @@ export function usePWAInstall() {
         isInstallable, 
         isStandalone, 
         handleInstallClick,
-        isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent)
+        isIOS: typeof navigator !== 'undefined' ? /iPad|iPhone|iPod/.test(navigator.userAgent) : false
     };
 }
