@@ -9,6 +9,7 @@ import NotificationListener from "@/components/NotificationListener";
 import QueryProvider from "@/components/QueryProvider";
 import { Suspense } from 'react';
 import VercelAnalytics from "@/components/VercelAnalytics";
+import GlobalSplashScreen from "@/components/GlobalSplashScreen";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -83,6 +84,7 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <QueryProvider>
+          <GlobalSplashScreen />
           <AuthProvider>
             {/* Background utilities each get their own Suspense — they don't block each other or the page */}
             <Suspense fallback={null}>
