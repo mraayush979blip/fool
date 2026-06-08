@@ -3,11 +3,24 @@
 import { motion } from 'framer-motion';
 import { useEffect } from 'react';
 
+let cachedAudioCtx: AudioContext | null = null;
+
+const getAudioContext = () => {
+    if (typeof window === 'undefined') return null;
+    if (!cachedAudioCtx) {
+        const AudioC = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioC) cachedAudioCtx = new AudioC();
+    }
+    if (cachedAudioCtx && cachedAudioCtx.state === 'suspended') {
+        cachedAudioCtx.resume();
+    }
+    return cachedAudioCtx;
+};
+
 const playSwordSwoosh = () => {
     try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
+        const ctx = getAudioContext();
+        if (!ctx) return;
 
         // Create white noise buffer
         const bufferSize = ctx.sampleRate * 0.2; // 0.2 seconds
@@ -81,7 +94,7 @@ export default function AdvancedCyberNinja({ phase }: { phase: 'animating' | 'sl
                     y: isAttacking ? 50 : -20,
                     opacity: isAttacking ? 1 : isReadying ? 1 : 0,
                 }}
-                transition={{ duration: isAttacking ? 0.12 : 0.8, ease: isAttacking ? "easeOut" : "easeInOut" }}
+                transition={{ duration: isAttacking ? 0.2 : 0.8, ease: isAttacking ? "circOut" : "easeInOut" }}
             >
                 {/* Sword Hilt */}
                 <div className="w-24 h-4 bg-zinc-900 rounded-l-md border-y border-l border-zinc-700 shadow-lg relative z-10 flex-shrink-0" />
