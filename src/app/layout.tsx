@@ -1,14 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: "#3b82f6",
-  viewportFit: "cover",
-};
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from 'sonner';
@@ -19,18 +10,30 @@ import QueryProvider from "@/components/QueryProvider";
 import { Suspense } from 'react';
 import VercelAnalytics from "@/components/VercelAnalytics";
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#3b82f6",
+  viewportFit: "cover",
+};
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap", // prevents invisible text during font load
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// NOTE: force-dynamic / revalidate=0 removed from root layout.
+// Setting these globally kills all Next.js RSC caching across every route.
+// Add them only on the specific page/route that needs fresh data.
 
 export const metadata: Metadata = {
   title: "Levelone",
@@ -50,8 +53,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Force fresh builds and purge Edge caches */}
-        <meta name="build-id" content={Date.now().toString()} />
         <link rel="manifest" href="/manifest.webmanifest?v=2" />
         <link rel="icon" type="image/png" href="/icon-ninja-round.png" />
         <link rel="apple-touch-icon" href="/icon-ninja-round.png" />
@@ -80,21 +81,29 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <QueryProvider>
           <AuthProvider>
-            <Suspense fallback={
-                <div className="fixed inset-0 flex items-center justify-center bg-background z-[9999]">
-                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                </div>
-            }>
+            {/* Background utilities each get their own Suspense — they don't block each other or the page */}
+            <Suspense fallback={null}>
               <VersionCheck />
+            </Suspense>
+            <Suspense fallback={null}>
               <PWADriver />
+            </Suspense>
+            <Suspense fallback={null}>
               <NotificationListener />
+            </Suspense>
+
+            {/* Page content with its own loading state */}
+            <Suspense fallback={
+              <div className="fixed inset-0 flex items-center justify-center bg-background z-[9999]">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            }>
               {children}
             </Suspense>
+
             <VercelAnalytics />
             <Toaster richColors position="top-center" />
           </AuthProvider>

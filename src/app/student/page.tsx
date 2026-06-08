@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { getPhaseStatus, cn } from '@/lib/utils';
 import AnimatedBackground from '@/components/ui/animated-background';
 import { StaggerContainer, StaggerItem, SlideUp } from '@/components/ui/motion-wrapper';
@@ -34,7 +34,7 @@ export default function StudentDashboard() {
     const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
         queryKey: ['student-dashboard', user?.id],
         queryFn: async () => {
-            console.log('🔄 [Dashboard] Fetching data for:', user?.id);
+            // dashboard fetch
 
             // Timeout helper
             const withTimeout = <T,>(promise: Promise<T>, ms: number = 8000): Promise<T> => {
@@ -47,13 +47,13 @@ export default function StudentDashboard() {
             try {
                 // Wrap in Promise.resolve to handle the thenable PostgrestBuilder properly
                 const { data: isRevoked, error: revokeError } = await withTimeout(Promise.resolve(supabase.rpc('check_and_revoke_self')));
-                if (revokeError) console.error('❌ [Dashboard] Revoke check error:', revokeError);
+
                 if (isRevoked) {
                     window.location.href = '/revoked';
                     return null;
                 }
             } catch (e) {
-                console.warn('⚠️ [Dashboard] Revoke check skipped (Timeout or Error):', e);
+
             }
 
             try {
@@ -78,7 +78,6 @@ export default function StudentDashboard() {
                     .select('phase_id, extended_deadline')
                     .eq('student_id', user?.id));
 
-                console.log('⏳ [Dashboard] Awaiting optimized parallel data fetch...');
                 const [streakResult, phasesResult, userResult, submissionsResult, activityResult, extensionsResult] = await withTimeout(Promise.all([
                     streakPromise,
                     phasesPromise,
@@ -97,7 +96,7 @@ export default function StudentDashboard() {
                     return acc;
                 }, {});
 
-                console.log('✅ [Dashboard] Data loaded successfully');
+
 
                 return {
                     phases,
@@ -111,7 +110,6 @@ export default function StudentDashboard() {
                     userMetadata: userResult?.data
                 };
             } catch (e: any) {
-                console.error('❌ [Dashboard] Main data fetch failed or timed out:', e);
                 return {
                     phases: [],
                     submissions: new Set<string>(),
@@ -122,24 +120,24 @@ export default function StudentDashboard() {
             }
         },
         enabled: !!user?.id,
-        staleTime: 60 * 1000,
-        retry: 2,
+        staleTime: 5 * 60 * 1000, // 5 minutes — dashboard data doesn't change that fast
+        retry: 1,
     });
 
-    const formatDuration = (seconds?: number) => {
+    const formatDuration = useCallback((seconds?: number) => {
         if (!seconds) return '0m';
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
         if (hours > 0) return `${hours}h ${minutes}m`;
         return `${minutes}m`;
-    };
+    }, []);
 
-    const getGreeting = () => {
+    const getGreeting = useCallback(() => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Good Morning';
         if (hour < 17) return 'Good Afternoon';
         return 'Good Evening';
-    };
+    }, []);
 
     const loading = authLoading || dashboardLoading;
     const phases = dashboardData?.phases || [];

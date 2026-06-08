@@ -66,7 +66,7 @@ body {
 
 .gpu-accelerated {
   transform: translateZ(0);
-  will-change: transform, opacity;
+  will-change: transform; /* opacity is cheap — no need to promote it to its own GPU layer */
   backface-visibility: hidden;
 }
 
@@ -220,5 +220,31 @@ textarea:focus {
   100% {
     left: 100%;
     opacity: 0;
+  }
+}
+
+/* -------------------------------------------------------
+   Respect OS-level "Reduce Motion" preference.
+   Disables heavy infinite animations on low-end devices
+   or for users who prefer reduced motion.
+------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Keep critical spinner functional but instant */
+  .animate-spin {
+    animation: none !important;
+  }
+
+  /* Disable GPU layer hint when not needed */
+  .gpu-accelerated {
+    will-change: auto;
+    transform: none;
   }
 }
