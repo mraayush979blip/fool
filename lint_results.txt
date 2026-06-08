@@ -1,0 +1,134 @@
+
+./src/app/admin/import/page.tsx
+50:17  Warning: 'name' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+50:23  Warning: 'value' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/admin/page.tsx
+3:10  Warning: 'useEffect' is defined but never used.  @typescript-eslint/no-unused-vars
+5:10  Warning: 'RetentionStats' is defined but never used.  @typescript-eslint/no-unused-vars
+21:10  Warning: 'motion' is defined but never used.  @typescript-eslint/no-unused-vars
+24:11  Warning: 'queryClient' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/admin/student-import/page.tsx
+50:17  Warning: 'name' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+50:23  Warning: 'value' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/install/desktop/page.tsx
+3:20  Warning: 'useEffect' is defined but never used.  @typescript-eslint/no-unused-vars
+5:73  Warning: 'MousePointer2' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/install/ios/page.tsx
+5:21  Warning: 'Share' is defined but never used.  @typescript-eslint/no-unused-vars
+5:28  Warning: 'PlusSquare' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/install/page.tsx
+6:52  Warning: 'Zap' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/page.tsx
+8:22  Warning: 'Code' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/revoked/page.tsx
+28:22  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+37:8  Warning: React Hook useEffect has a missing dependency: 'fetchRevokeDetails'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/student/compete/page.tsx
+9:19  Warning: 'FadeIn' is defined but never used.  @typescript-eslint/no-unused-vars
+48:12  Warning: 'rankContext' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+121:11  Warning: 'isNeon' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/student/help/page.tsx
+9:5  Warning: 'ChevronRight' is defined but never used.  @typescript-eslint/no-unused-vars
+12:5  Warning: 'MessageSquare' is defined but never used.  @typescript-eslint/no-unused-vars
+88:18  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/student/layout.tsx
+24:19  Warning: 'signOut' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+66:11  Warning: 'isFullscreen' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/student/page.tsx
+17:8  Warning: 'Link' is defined but never used.  @typescript-eslint/no-unused-vars
+19:18  Warning: 'AnimatePresence' is defined but never used.  @typescript-eslint/no-unused-vars
+23:10  Warning: 'StaggerContainer' is defined but never used.  @typescript-eslint/no-unused-vars
+23:28  Warning: 'StaggerItem' is defined but never used.  @typescript-eslint/no-unused-vars
+49:49  Warning: 'revokeError' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+55:22  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+81:24  Warning: 'streakResult' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+112:22  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+242:56  Warning: 'index' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/student/phase/[id]/page.tsx
+10:5  Warning: 'Github' is defined but never used.  @typescript-eslint/no-unused-vars
+11:5  Warning: 'Send' is defined but never used.  @typescript-eslint/no-unused-vars
+16:5  Warning: 'Loader2' is defined but never used.  @typescript-eslint/no-unused-vars
+17:5  Warning: 'Upload' is defined but never used.  @typescript-eslint/no-unused-vars
+18:5  Warning: 'X' is defined but never used.  @typescript-eslint/no-unused-vars
+19:5  Warning: 'Trophy' is defined but never used.  @typescript-eslint/no-unused-vars
+20:5  Warning: 'Target' is defined but never used.  @typescript-eslint/no-unused-vars
+21:5  Warning: 'Zap' is defined but never used.  @typescript-eslint/no-unused-vars
+22:5  Warning: 'Shield' is defined but never used.  @typescript-eslint/no-unused-vars
+23:5  Warning: 'MessageSquare' is defined but never used.  @typescript-eslint/no-unused-vars
+25:5  Warning: 'Lock' is defined but never used.  @typescript-eslint/no-unused-vars
+28:26  Warning: 'cn' is defined but never used.  @typescript-eslint/no-unused-vars
+29:45  Warning: 'formatFileSize' is defined but never used.  @typescript-eslint/no-unused-vars
+63:12  Warning: 'success' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+63:21  Warning: 'setSuccess' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+64:12  Warning: 'isVideoStarted' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+64:28  Warning: 'setIsVideoStarted' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+74:27  Warning: 'isRevoked' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+550:11  Warning: 'totalAssignments' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/student/store/page.tsx
+6:30  Warning: 'ShoppingBag' is defined but never used.  @typescript-eslint/no-unused-vars
+183:11  Warning: 'isNeon' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/student/tutorial/page.tsx
+5:64  Warning: 'Settings' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/team/page.tsx
+111:37  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/GlobalSplashScreen.tsx
+20:18  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/InstallPWA.tsx
+15:13  Warning: 'isInstallable' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/MarkdownRenderer.tsx
+6:10  Warning: 'cn' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/NavigationMenu.tsx
+5:27  Warning: 'Palette' is defined but never used.  @typescript-eslint/no-unused-vars
+5:60  Warning: 'Check' is defined but never used.  @typescript-eslint/no-unused-vars
+5:67  Warning: 'Users' is defined but never used.  @typescript-eslint/no-unused-vars
+8:10  Warning: 'cn' is defined but never used.  @typescript-eslint/no-unused-vars
+11:7  Warning: 'themes' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+18:28  Warning: 'updateTheme' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+25:11  Warning: 'currentTheme' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/ThemeSwitcher.tsx
+5:26  Warning: 'Moon' is defined but never used.  @typescript-eslint/no-unused-vars
+5:37  Warning: 'Monitor' is defined but never used.  @typescript-eslint/no-unused-vars
+5:46  Warning: 'Pipette' is defined but never used.  @typescript-eslint/no-unused-vars
+5:60  Warning: 'Sparkles' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/TrialModal.tsx
+7:18  Warning: 'Code' is defined but never used.  @typescript-eslint/no-unused-vars
+48:16  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+73:14  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/gamification/BadgeList.tsx
+42:11  Warning: 'isNeon' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/gamification/StoreItemCard.tsx
+3:49  Warning: 'Sparkles' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/ui/ExpandableText.tsx
+5:10  Warning: 'cn' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/ui/motion-wrapper.tsx
+3:18  Warning: 'AnimatePresence' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/contexts/AuthContext.tsx
+93:8  Warning: React Hook useEffect has a missing dependency: 'loading'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
