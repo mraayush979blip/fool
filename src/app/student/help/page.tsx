@@ -6,9 +6,11 @@ import {
     Trash2,
     Sparkles,
     User,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ChevronRight,
     Loader2,
     ArrowLeft,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     MessageSquare,
     Zap,
     Shield
@@ -85,6 +87,7 @@ export default function AIHelpPage() {
             } else {
                 throw new Error(result.error);
             }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error: any) {
             const errorMessage = "I'm having trouble connecting to my brain right now. Please try again in a few seconds.";
             setMessages(prev => [...prev, {

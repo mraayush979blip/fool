@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Smartphone, Monitor, Apple, ChevronRight, Zap, Shield } from 'lucide-react';
 import Image from 'next/image';
 

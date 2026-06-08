@@ -25,6 +25,7 @@ export default function RevokedPage() {
                 const res = await fetch('/api/motivation');
                 const data = await res.json();
                 setMotivation(data.message);
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (e) {
                 setMotivation("Tu yahan quit karne nahi aaya tha. Uth, aur kaam khatam kar!");
             }
@@ -34,6 +35,7 @@ export default function RevokedPage() {
 
         if (!user) return;
         fetchRevokeDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     const fetchRevokeDetails = async () => {

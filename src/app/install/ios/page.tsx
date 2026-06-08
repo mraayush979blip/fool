@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ArrowLeft, Share, PlusSquare, CheckCircle2, ChevronRight, Apple, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';

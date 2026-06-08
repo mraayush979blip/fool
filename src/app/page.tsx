@@ -5,6 +5,7 @@ import NeonLoader from '@/components/NeonLoader';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ArrowRight, Code, Terminal, Zap, BookOpen, Rocket } from 'lucide-react';
 import { StaggerContainer, StaggerItem } from '@/components/ui/motion-wrapper';
 

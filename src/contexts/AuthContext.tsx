@@ -90,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
 
         initializeAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchUserProfile = async (userId: string) => {

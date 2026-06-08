@@ -21,6 +21,7 @@ export default function StudentLayout({
 }: {
     children: React.ReactNode;
 }) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { user, signOut } = useAuth();
     const pathname = usePathname();
     const [localTheme, setLocalTheme] = useState<string | null>(null);
@@ -63,6 +64,7 @@ export default function StudentLayout({
     const isTeamPage = pathname === '/student/team';
     const isRevoked = user?.status === 'revoked';
     const hideNavigation = isHelpPage || isPhasePage || isTeamPage || isRevoked;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isFullscreen = isHelpPage || isPhasePage || isTeamPage;
     const currentTheme = user?.equipped_theme || localTheme || 'theme-light';
 

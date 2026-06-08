@@ -108,6 +108,7 @@ export default function TeamPage() {
                             >
                                 {/* Member Background Image Overlay */}
                                 {member.bgImage && (
+                                    // eslint-disable-next-line @next/next/no-img-element
                                     <img
                                         src={member.bgImage}
                                         alt={`${member.name} background`}

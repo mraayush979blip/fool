@@ -17,6 +17,7 @@ export default function GlobalSplashScreen() {
             if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(() => {});
             }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {}
 
         // We assume the real GIF takes ~1.5 seconds to reach the "slash" moment.

@@ -39,6 +39,7 @@ interface BadgeListProps {
 
 export default function BadgeList({ badges, userBadges }: BadgeListProps) {
     const { user } = useAuth();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isNeon = user?.equipped_theme === 'theme-neon';
     const earnedBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
 

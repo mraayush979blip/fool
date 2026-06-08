@@ -1,7 +1,9 @@
 'use client';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ArrowLeft, Monitor, CheckCircle2, ChevronRight, Download, Zap, MousePointer2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';

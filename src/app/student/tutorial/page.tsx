@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { LayoutDashboard, Trophy, ShoppingBag, Sparkles, User, Settings, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 

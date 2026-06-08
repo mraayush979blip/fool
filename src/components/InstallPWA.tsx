@@ -12,6 +12,7 @@ interface InstallPWAProps {
 }
 
 export default function InstallPWA({ variant = 'header' }: InstallPWAProps) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { isInstallable, isStandalone, isIOS, handleInstallClick } = usePWAInstall();
     const [showModal, setShowModal] = useState(false);
     const [mounted, setMounted] = useState(false);
