@@ -2,51 +2,36 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import AdvancedCyberNinja from './AdvancedCyberNinja';
 
 export default function GlobalSplashScreen() {
-    const [phase, setPhase] = useState<'rolling' | 'standing' | 'readying' | 'attacking' | 'slashed' | 'bloody' | 'hidden'>('rolling');
+    const [phase, setPhase] = useState<'animating' | 'slashed' | 'bloody' | 'hidden'>('animating');
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
-        // We use the generated .wav sword sound
+        // Real sword sound
         audioRef.current = new Audio('/sounds/sword.wav');
         audioRef.current.volume = 1.0;
 
-        // Try to request fullscreen silently
         try {
             if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(() => {});
             }
         } catch (e) {}
 
-        // Timing sequence
-        // 0 - 800ms: Rolling in
-        const standTimer = setTimeout(() => {
-            setPhase('standing');
-        }, 800);
-
-        // 800 - 1300ms: Standing, then readying sword
-        const readyTimer = setTimeout(() => {
-            setPhase('readying');
-        }, 1300);
-
-        // 1300 - 1600ms: Attacking lunge
-        const attackTimer = setTimeout(() => {
-            setPhase('attacking');
-        }, 1800);
-
+        // We assume the real GIF takes ~1.5 seconds to reach the "slash" moment.
         // 1600ms: The slash impacts the screen
         const slashTimer = setTimeout(() => {
             setPhase('slashed');
             if (audioRef.current) {
                 audioRef.current.play().catch(e => console.warn('Audio play blocked:', e));
             }
-        }, 1900);
+        }, 1600);
 
         // 2200ms: Blood and branding
         const bloodyTimer = setTimeout(() => {
             setPhase('bloody');
-        }, 2500);
+        }, 2200);
 
         // 4500ms: Fade out
         const hideTimer = setTimeout(() => {
@@ -54,9 +39,6 @@ export default function GlobalSplashScreen() {
         }, 4500);
 
         return () => {
-            clearTimeout(standTimer);
-            clearTimeout(readyTimer);
-            clearTimeout(attackTimer);
             clearTimeout(slashTimer);
             clearTimeout(bloodyTimer);
             clearTimeout(hideTimer);
@@ -64,58 +46,6 @@ export default function GlobalSplashScreen() {
     }, []);
 
     if (phase === 'hidden') return null;
-
-    // Animation variants for the Ninja
-    const ninjaVariants = {
-        rolling: {
-            x: -300,
-            y: 100,
-            rotate: -360,
-            scale: 0.5,
-            opacity: 0,
-        },
-        standing: {
-            x: 0,
-            y: 0,
-            rotate: 0,
-            scale: 0.8,
-            opacity: 1,
-            transition: { type: "spring", stiffness: 100, damping: 15 }
-        },
-        readying: {
-            x: -20,
-            y: 10,
-            rotate: -15,
-            scale: 0.85,
-            opacity: 1,
-            transition: { duration: 0.4, ease: "easeOut" }
-        },
-        attacking: {
-            x: 100,
-            y: -50,
-            rotate: 45,
-            scale: 1.5,
-            opacity: 1,
-            filter: 'brightness(1.5)',
-            transition: { duration: 0.1, ease: "easeIn" }
-        },
-        slashed: {
-            x: 150,
-            y: -20,
-            rotate: 45,
-            scale: 1.2,
-            opacity: 0, // Fade out after attacking
-            filter: 'brightness(0.5)',
-            transition: { duration: 0.4, ease: "easeOut" }
-        },
-        bloody: {
-            x: 150,
-            y: -20,
-            rotate: 45,
-            scale: 1.2,
-            opacity: 0,
-        }
-    };
 
     return (
         <AnimatePresence>
@@ -137,19 +67,10 @@ export default function GlobalSplashScreen() {
 
                 <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
                     
-                    {/* The Ninja */}
-                    <motion.div
-                        variants={ninjaVariants}
-                        initial="rolling"
-                        animate={phase}
-                        className="relative z-30"
-                    >
-                        <img 
-                            src="/icon-ninja-round.png" 
-                            alt="Levelone Ninja" 
-                            className="w-48 h-48 object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-                        />
-                    </motion.div>
+                    {/* The Advanced Cyber Ninja */}
+                    <div className="relative z-30 flex items-center justify-center">
+                        <AdvancedCyberNinja phase={phase} />
+                    </div>
 
                     {/* The Sword Scratch / Slash */}
                     {(phase === 'slashed' || phase === 'bloody') && (
@@ -196,7 +117,7 @@ export default function GlobalSplashScreen() {
                                 initial={{ scale: 2, opacity: 0, filter: 'blur(20px)' }}
                                 animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
                                 transition={{ type: "spring", stiffness: 150, damping: 12 }}
-                                className="relative flex flex-col items-center"
+                                className="relative flex flex-col items-center mt-32"
                             >
                                 <h1 className="text-6xl md:text-8xl font-black tracking-[-0.05em] text-red-600 drop-shadow-[0_0_25px_rgba(220,38,38,0.9)]" style={{ fontFamily: 'impact, sans-serif' }}>
                                     LEVEL<span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">ONE</span>
