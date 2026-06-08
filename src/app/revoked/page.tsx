@@ -17,8 +17,21 @@ export default function RevokedPage() {
     const [isWithin30Days, setIsWithin30Days] = useState(false);
     const [appeal, setAppeal] = useState<any>(null);
     const [reasonText, setReasonText] = useState('');
+    const [motivation, setMotivation] = useState('');
 
     useEffect(() => {
+        const fetchMotivation = async () => {
+            try {
+                const res = await fetch('/api/motivation');
+                const data = await res.json();
+                setMotivation(data.message);
+            } catch (e) {
+                setMotivation("Tu yahan quit karne nahi aaya tha. Uth, aur kaam khatam kar!");
+            }
+        };
+
+        fetchMotivation();
+
         if (!user) return;
         fetchRevokeDetails();
     }, [user]);
@@ -138,6 +151,14 @@ export default function RevokedPage() {
                     <p className="text-gray-500 font-medium max-w-sm mx-auto">
                         Your account has been temporarily suspended. Please review the details below.
                     </p>
+
+                    {motivation && (
+                        <div className="mt-8 mx-auto max-w-md p-5 bg-zinc-950 rounded-2xl border-2 border-red-500 shadow-[0_10px_30px_rgba(239,68,68,0.3)] transform -rotate-1">
+                            <p className="text-red-500 font-black text-lg leading-snug uppercase tracking-wide font-mono">
+                                ⚠️ "{motivation}"
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-white shadow-xl rounded-3xl border border-gray-100 overflow-hidden">

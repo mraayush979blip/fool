@@ -153,14 +153,14 @@ export default function AdvancedCyberNinja({ phase }: { phase: 'animating' | 'sl
                 <motion.div 
                     className="h-2 rounded-r-full bg-white z-0 -ml-1"
                     style={{
-                        boxShadow: '0 0 10px #fff, 0 0 20px #ef4444, 0 0 40px #ef4444, 0 0 80px #ef4444',
+                        boxShadow: '0 0 10px #fff, 0 0 20px #3b82f6, 0 0 40px #3b82f6, 0 0 80px #3b82f6',
                     }}
                     initial={{ width: 350 }}
                     animate={{
                         width: isAttacking ? 450 : 350,
                         boxShadow: isAttacking 
-                            ? '0 0 20px #fff, 0 0 40px #ef4444, 0 0 80px #ef4444, 0 0 120px #ef4444' 
-                            : '0 0 10px #fff, 0 0 20px #ef4444, 0 0 40px #ef4444, 0 0 80px #ef4444',
+                            ? '0 0 20px #fff, 0 0 40px #3b82f6, 0 0 80px #3b82f6, 0 0 120px #3b82f6' 
+                            : '0 0 10px #fff, 0 0 20px #3b82f6, 0 0 40px #3b82f6, 0 0 80px #3b82f6',
                     }}
                 />
             </motion.div>
@@ -175,7 +175,7 @@ export default function AdvancedCyberNinja({ phase }: { phase: 'animating' | 'sl
             >
                 <svg viewBox="0 0 500 500" className="w-full h-full">
                     <defs>
-                        <filter id="redGlow" x="-50%" y="-50%" width="200%" height="200%">
+                        <filter id="blueGlow" x="-50%" y="-50%" width="200%" height="200%">
                             <feGaussianBlur stdDeviation="8" result="blur" />
                             <feMerge>
                                 <feMergeNode in="blur" />
@@ -225,8 +225,8 @@ export default function AdvancedCyberNinja({ phase }: { phase: 'animating' | 'sl
                     {/* Glowing Eyes */}
                     <motion.path 
                         d="M 180 222 L 235 245 L 240 238 L 185 215 Z" 
-                        fill="#ef4444" 
-                        filter="url(#redGlow)"
+                        fill="#3b82f6" 
+                        filter="url(#blueGlow)"
                         animate={{
                             opacity: isAttacking ? 1 : 0.8,
                             scaleY: isAttacking ? 0.2 : 1,
@@ -234,8 +234,8 @@ export default function AdvancedCyberNinja({ phase }: { phase: 'animating' | 'sl
                     />
                     <motion.path 
                         d="M 320 222 L 265 245 L 260 238 L 315 215 Z" 
-                        fill="#ef4444" 
-                        filter="url(#redGlow)"
+                        fill="#3b82f6" 
+                        filter="url(#blueGlow)"
                         animate={{
                             opacity: isAttacking ? 1 : 0.8,
                             scaleY: isAttacking ? 0.2 : 1,
@@ -244,7 +244,7 @@ export default function AdvancedCyberNinja({ phase }: { phase: 'animating' | 'sl
 
                     {/* Visor Edge Highlight */}
                     <path d="M 155 205 L 250 245 L 345 205" fill="none" stroke="#333" strokeWidth="2" />
-                    <path d="M 150 220 L 250 270 L 350 220" fill="none" stroke="#ef4444" strokeWidth="1" opacity="0.5" />
+                    <path d="M 150 220 L 250 270 L 350 220" fill="none" stroke="#3b82f6" strokeWidth="1" opacity="0.5" />
                 </svg>
             </motion.div>
 
