@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogOut, Palette, ChevronRight, Sun, Zap, Check, Users, Bug, HelpCircle, Shield } from 'lucide-react';
+import { Menu, X, LogOut, Palette, ChevronRight, Sun, Zap, Check, Users, Bug, HelpCircle, Shield, Smartphone } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import InstallPWA from './InstallPWA';
+
 
 const themes = [
     { id: 'theme-light', name: 'Ivory', icon: Sun },
@@ -85,9 +85,24 @@ export default function NavigationMenu() {
                             </div>
 
                             <div className="space-y-6">
-                                {/* Premium PWA Component (VARIANT="MENU") */}
+                                {/* Install App — links to the dedicated /install guide */}
                                 <div className="px-1">
-                                    <InstallPWA variant="menu" />
+                                    <Link
+                                        href="/install"
+                                        onClick={() => setIsOpen(false)}
+                                        className="w-full flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary/20 text-primary transition-all group shadow-sm shadow-primary/10 hover:bg-primary/20"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-primary/20 rounded-lg group-hover:bg-primary/30">
+                                                <Smartphone className="h-4 w-4 text-primary animate-pulse" />
+                                            </div>
+                                            <span className="text-xs font-black tracking-tight">Install Levelone</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-[8px] font-black uppercase bg-primary text-white px-1.5 py-0.5 rounded-full">New</span>
+                                            <ChevronRight className="h-3 w-3 opacity-50 group-hover:translate-x-0.5 transition-transform" />
+                                        </div>
+                                    </Link>
                                 </div>
 
                                 <div className="space-y-1">
