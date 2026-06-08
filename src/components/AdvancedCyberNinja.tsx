@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 let cachedAudioCtx: AudioContext | null = null;
 
@@ -99,10 +99,14 @@ const playKnifeSound = () => {
 export default function AdvancedCyberNinja({ phase }: { phase: 'animating' | 'slashed' | 'bloody' | 'hidden' }) {
     const isAttacking = phase === 'slashed' || phase === 'bloody';
     const isReadying = phase === 'animating';
+    const playedAttackSound = useRef(false);
 
     useEffect(() => {
-        if (isAttacking) {
+        if (isAttacking && !playedAttackSound.current) {
             playSwordSwoosh();
+            playedAttackSound.current = true;
+        } else if (!isAttacking) {
+            playedAttackSound.current = false;
         }
     }, [isAttacking]);
 
