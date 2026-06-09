@@ -47,6 +47,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
         total_assignments: 1,
         has_multiple_options: false,
         options: [],
+        assignment_submission_types: [],
     });
 
     const [optionFiles, setOptionFiles] = useState<Record<string, File>>({});
@@ -429,6 +430,7 @@ export default function PhaseForm({ id }: PhaseFormProps) {
                                 <option value="both">Both (GitHub Link & File Upload)</option>
                                 <option value="github">GitHub Link Only</option>
                                 <option value="file">File Upload Only</option>
+                                <option value="web">Web URL (Deployed Link) Only</option>
                             </select>
                         </div>
                         <p className="mt-1 text-xs text-gray-500">How should students submit their work for this phase?</p>

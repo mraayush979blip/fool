@@ -67,9 +67,11 @@ export default function SubmissionPortal({
 
                 <div className="space-y-12">
                     {Array.from({ length: phase.total_assignments || 1 }, (_, i) => i + 1).map((idx) => {
+                        const allowedTypeForIndex = phase.assignment_submission_types?.[idx - 1] || currentAllowedType;
                         const data = formData[idx] || {
-                            submissionType: 'github',
+                            submissionType: allowedTypeForIndex === 'both' ? 'github' : allowedTypeForIndex,
                             githubUrl: '',
+                            webUrl: '',
                             notes: '',
                             selectedFile: null,
                             existingFileUrl: null
@@ -94,7 +96,7 @@ export default function SubmissionPortal({
                                 </div>
 
                                 <form onSubmit={(e) => handleSubmit(e, idx)} className="space-y-6">
-                                    {currentAllowedType === 'both' && (
+                                    {allowedTypeForIndex === 'both' && (
                                         <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
                                             <button
                                                 type="button"
@@ -116,6 +118,16 @@ export default function SubmissionPortal({
                                             >
                                                 Local File
                                             </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData((p: any) => ({ ...p, [idx]: { ...p[idx], submissionType: 'web' } }))}
+                                                className={cn(
+                                                    "flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all",
+                                                    data.submissionType === 'web' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'
+                                                )}
+                                            >
+                                                Web Link
+                                            </button>
                                         </div>
                                     )}
 
@@ -130,6 +142,20 @@ export default function SubmissionPortal({
                                                     placeholder="GitHub Repository URL"
                                                     value={data.githubUrl}
                                                     onChange={(e) => setFormData((p: any) => ({ ...p, [idx]: { ...p[idx], githubUrl: e.target.value } }))}
+                                                    className="w-full !pl-10 text-sm font-medium"
+                                                    disabled={!isUnlocked || isPastDeadline}
+                                                />
+                                            </div>
+                                        ) : data.submissionType === 'web' ? (
+                                            <div className="relative group">
+                                                <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                                                    <Send className="h-4 w-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                                                </div>
+                                                <input
+                                                    type="url"
+                                                    placeholder="Deployed Web URL"
+                                                    value={data.webUrl}
+                                                    onChange={(e) => setFormData((p: any) => ({ ...p, [idx]: { ...p[idx], webUrl: e.target.value } }))}
                                                     className="w-full !pl-10 text-sm font-medium"
                                                     disabled={!isUnlocked || isPastDeadline}
                                                 />

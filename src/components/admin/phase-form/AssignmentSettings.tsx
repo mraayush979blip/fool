@@ -73,6 +73,35 @@ export default function AssignmentSettings({ formData, setFormData }: Assignment
                 <p className="mt-1 text-xs text-gray-400 italic">How many separate assignments must the student submit for this phase?</p>
             </div>
 
+            {(formData.total_assignments || 1) > 1 && (
+                <div className="sm:col-span-6 bg-gray-50 p-4 rounded-xl border border-gray-200 mt-4">
+                    <h3 className="text-sm font-bold text-gray-900 mb-3">Specific Submission Types per Assignment</h3>
+                    <div className="space-y-4">
+                        {Array.from({ length: formData.total_assignments || 1 }).map((_, idx) => (
+                            <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <label className="text-sm font-medium text-gray-700 sm:w-1/3">
+                                    Assignment {idx + 1}
+                                </label>
+                                <select
+                                    className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:w-2/3 sm:text-sm border-gray-300 rounded-md py-2 px-3 border text-gray-900"
+                                    value={formData.assignment_submission_types?.[idx] || 'both'}
+                                    onChange={(e) => {
+                                        const newTypes = [...(formData.assignment_submission_types || [])];
+                                        newTypes[idx] = e.target.value;
+                                        setFormData((prev: any) => ({ ...prev, assignment_submission_types: newTypes }));
+                                    }}
+                                >
+                                    <option value="both">Both (GitHub Link & File Upload)</option>
+                                    <option value="github">GitHub Link Only</option>
+                                    <option value="file">File Upload Only</option>
+                                    <option value="web">Web URL (Deployed Link) Only</option>
+                                </select>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="sm:col-span-6 border-t border-gray-100 pt-6">
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                     <div>

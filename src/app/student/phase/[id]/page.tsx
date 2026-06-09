@@ -65,8 +65,9 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
     const [submittingIndex, setSubmittingIndex] = useState<number | null>(null);
     const [submissions, setSubmissions] = useState<Record<number, any>>({});
     const [formData, setFormData] = useState<Record<number, {
-        submissionType: 'github' | 'file';
+        submissionType: 'github' | 'file' | 'web';
         githubUrl: string;
+        webUrl: string;
         notes: string;
         selectedFile: File | null;
         existingFileUrl: string | null;
@@ -96,7 +97,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
             const { data, error } = await supabase
                 .from('phases')
-                .select('id, phase_number, title, description, youtube_url, assignment_file_url, assignment_resource_url, allowed_submission_type, start_date, end_date, is_paused, bypass_time_requirement, min_seconds_required, total_assignments, has_multiple_options, options')
+                .select('id, phase_number, title, description, youtube_url, assignment_file_url, assignment_resource_url, allowed_submission_type, assignment_submission_types, start_date, end_date, is_paused, bypass_time_requirement, min_seconds_required, total_assignments, has_multiple_options, options')
                 .eq('id', id)
                 .single();
 
@@ -193,6 +194,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 initialFormData[idx] = {
                     submissionType: sub.submission_type,
                     githubUrl: sub.github_url || '',
+                    webUrl: sub.web_url || '',
                     notes: sub.notes || '',
                     selectedFile: null,
                     existingFileUrl: sub.file_url || null
@@ -201,9 +203,11 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
 
             for (let i = 1; i <= totalAssignments; i++) {
                 if (!initialFormData[i]) {
+                    const allowedForIndex = phase.assignment_submission_types?.[i - 1] || currentAllowedType;
                     initialFormData[i] = {
-                        submissionType: currentAllowedType === 'file' ? 'file' : 'github',
+                        submissionType: allowedForIndex === 'file' ? 'file' : allowedForIndex === 'web' ? 'web' : 'github',
                         githubUrl: '',
+                        webUrl: '',
                         notes: '',
                         selectedFile: null,
                         existingFileUrl: null
@@ -411,6 +415,14 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                 }));
                 return;
             }
+        } else if (data.submissionType === 'web') {
+            if (!data.webUrl) {
+                setFormData(prev => ({
+                    ...prev,
+                    [index]: { ...prev[index], error: 'Please enter a valid Web URL' }
+                }));
+                return;
+            }
         } else if (data.submissionType === 'file') {
             if (!data.selectedFile && !data.existingFileUrl) {
                 setFormData(prev => ({ ...prev, [index]: { ...prev[index], error: 'Please select a file' } }));
@@ -462,6 +474,7 @@ export default function PhaseDetailPage({ params }: PhasePageProps) {
                     submission_type: data.submissionType,
                     github_url: data.submissionType === 'github' ? data.githubUrl : null,
                     file_url: data.submissionType === 'file' ? finalFileUrl : null,
+                    web_url: data.submissionType === 'web' ? data.webUrl : null,
                     notes: data.notes,
                     submitted_at: optimisticTimestamp,
                     status: 'valid'

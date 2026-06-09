@@ -51,6 +51,9 @@ export async function sendEmailNotification(payload: {
 
     console.log(`Starting individual email sends for ${students.length} students...`);
     const results = [];
+    
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://webdev1-gamma.vercel.app';
+    const batchName = appUrl.includes('webdev2-gamma-three') ? 'Batch 2' : 'Batch 1';
 
     for (const student of students) {
       const mailOptions = {
@@ -80,9 +83,9 @@ export async function sendEmailNotification(payload: {
                 </p>
                 
                 <div style="margin-top: 32px; text-align: center;">
-                  <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://webdev1.edgeone.app'}" 
+                  <a href="${appUrl}" 
                      style="display: inline-block; padding: 14px 28px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; transition: background-color 0.2s;">
-                    Go to Dashboard
+                    Go to Dashboard (${batchName})
                   </a>
                 </div>
                 

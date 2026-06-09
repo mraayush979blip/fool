@@ -1,7 +1,7 @@
 // Database Types
 export type UserRole = 'admin' | 'student';
 export type UserStatus = 'active' | 'revoked';
-export type SubmissionType = 'github' | 'file';
+export type SubmissionType = 'github' | 'file' | 'web';
 export type SubmissionStatus = 'valid' | 'late' | 'deleted';
 export type PhaseStatus = 'upcoming' | 'live' | 'ended' | 'paused';
 export type ActivityType = 'HEARTBEAT' | 'PAGE_VIEW' | 'VIDEO_PROGRESS' | 'SUBMISSION_CREATED' | 'SUBMISSION_UPDATED' | 'SUBMISSION_DELETED';
@@ -37,7 +37,8 @@ export interface PhaseOption {
   youtube_url: string;
   assignment_file_url?: string;
   assignment_resource_url?: string;
-  allowed_submission_type?: 'github' | 'file' | 'both';
+  allowed_submission_type?: 'github' | 'file' | 'both' | 'web';
+  assignment_submission_types?: string[];
 }
 
 // Phase Interface
@@ -49,7 +50,8 @@ export interface Phase {
   youtube_url?: string;
   assignment_resource_url?: string;
   assignment_file_url?: string;
-  allowed_submission_type?: 'github' | 'file' | 'both';
+  allowed_submission_type?: 'github' | 'file' | 'both' | 'web';
+  assignment_submission_types?: string[];
   start_date: string;
   end_date: string;
   status: PhaseStatus;
@@ -76,6 +78,7 @@ export interface Submission {
   submission_type: SubmissionType;
   github_url?: string;
   file_url?: string;
+  web_url?: string;
   notes?: string;
   status: SubmissionStatus;
   is_deleted: boolean;
@@ -94,6 +97,7 @@ export interface SubmissionHistory {
   submission_type: SubmissionType;
   github_url?: string;
   file_url?: string;
+  web_url?: string;
   notes?: string;
   status: SubmissionStatus;
   deadline_at: string;
