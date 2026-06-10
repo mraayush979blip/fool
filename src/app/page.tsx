@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ArrowRight, Code, Terminal, Zap, BookOpen, Rocket } from 'lucide-react';
+import { ArrowRight, Code, Terminal, Zap, BookOpen, Rocket, Users } from 'lucide-react';
 import { StaggerContainer, StaggerItem } from '@/components/ui/motion-wrapper';
 
 export default function HomePage() {
@@ -72,6 +72,12 @@ export default function HomePage() {
                     Get Started
                   </span>
                   <ArrowRight className="h-4 w-4 text-blue-400 transition-transform group-hover:translate-x-1" />
+                </Link>
+                <Link href="/team" className="group inline-flex h-14 items-center justify-center px-10 font-bold text-sm tracking-widest uppercase rounded-full border border-zinc-800 bg-[#090a0f]/50 text-zinc-400 backdrop-blur-xl transition duration-500 hover:bg-[#0f121d] hover:text-white hover:border-zinc-700">
+                  <span className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors" />
+                    Meet the Team
+                  </span>
                 </Link>
               </div>
             </StaggerItem>

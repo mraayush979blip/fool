@@ -88,7 +88,8 @@ export async function POST(request: Request) {
     const results = [];
     
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://webdev1-gamma.vercel.app';
-    const batchName = appUrl.includes('webdev2-gamma-three') ? 'Batch 2' : 'Batch 1';
+    const batchName = appUrl.includes('l1webdev.vercel.app') ? 'Batch 3' : 
+                      appUrl.includes('webdev2-gamma-three') ? 'Batch 2' : 'Batch 1';
 
     for (const student of students) {
       const mailOptions = {

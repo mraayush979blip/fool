@@ -114,6 +114,19 @@ export default function NavigationMenu() {
 
                                 <div className="space-y-1">
                                     <Link
+                                        href={`/team?from=${user?.role === 'admin' ? 'admin' : 'student'}`}
+                                        onClick={() => setIsOpen(false)}
+                                        className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-primary/5 text-muted hover:text-primary transition-all group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20">
+                                                <Users className="h-4 w-4 text-primary" />
+                                            </div>
+                                            <span className="text-xs font-bold tracking-tight">Our Team</span>
+                                        </div>
+                                        <ChevronRight className="h-3.5 w-3.5 opacity-0 group-hover:translate-x-0.5 transition-all" />
+                                    </Link>
+                                    <Link
                                         href="/student/tutorial"
                                         onClick={() => setIsOpen(false)}
                                         className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-primary/5 text-muted hover:text-primary transition-all group"

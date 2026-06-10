@@ -4,14 +4,15 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Linkedin, Globe, Users, ArrowLeft, Sparkles, Code2, Palette, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { SlideUp, FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/motion-wrapper';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
-const team = [
+const baseTeam = [
     {
         name: "Aayush Sharma",
-        role: "Team Member",
+        role: "Founder & Lead Developer",
         description: "Visionary behind Levelone's core architecture and AI systems.",
         linkedin: "https://www.linkedin.com/in/aayush-sharma-2013d",
         portfolio: "https://aayush-sharma-beige.vercel.app/",
@@ -19,12 +20,30 @@ const team = [
         color: "from-indigo-500 to-blue-500",
         bgImage: "/images/team/aayush.png",
         icon: Code2
-    },
+    }
+];
+
+const batch3Members = [
+    {
+        name: "Aditya Sahu",
+        role: "Team Member",
+        description: "Driving innovation and excellence within the Levelone ecosystem.",
+        linkedin: "https://in.linkedin.com/in/aditya-sahu-02081538a",
+        portfolio: undefined,
+        avatar: "🚀",
+        color: "from-purple-500 to-pink-500",
+        bgImage: "/images/team/aditya.jpg",
+        icon: Users
+    }
+];
+
+const batch1And2Members = [
     {
         name: "Palak Chaurasia",
         role: "Team Member",
         description: "Crafting the visual identity and premium aesthetic of Levelone.",
         linkedin: "https://www.linkedin.com/in/palak-chaurasia-6a1388388/",
+        portfolio: undefined,
         avatar: "🎨",
         color: "from-purple-500 to-pink-500",
         bgImage: "/images/team/palak.png",
@@ -35,6 +54,7 @@ const team = [
         role: "Team Member",
         description: "Ensuring the scalability and precision of our educational infrastructure.",
         linkedin: "https://www.linkedin.com/in/kritagyajain21/",
+        portfolio: undefined,
         avatar: "🛡️",
         color: "from-emerald-500 to-teal-500",
         bgImage: "/images/team/kritagya.png",
@@ -43,10 +63,27 @@ const team = [
 ];
 
 export default function TeamPage() {
-    const pathname = usePathname();
-    const isStudentRoute = pathname?.startsWith('/student');
-    const backHref = isStudentRoute ? '/student' : '/';
-    const backLabel = isStudentRoute ? 'Back to Dashboard' : 'Back to Home';
+    const searchParams = useSearchParams();
+    const from = searchParams?.get('from');
+    const { user } = useAuth();
+    
+    // Determine back link based on where they came from or their logged in state
+    let backHref = '/';
+    let backLabel = 'Back to Home';
+    
+    const role = from || user?.role;
+    
+    if (role === 'student') {
+        backHref = '/student';
+        backLabel = 'Back to Dashboard';
+    } else if (role === 'admin') {
+        backHref = '/admin';
+        backLabel = 'Back to Admin';
+    }
+    
+    // Determine the environment based on NEXT_PUBLIC_APP_URL
+    const isBatch3 = process.env.NEXT_PUBLIC_APP_URL?.includes('l1webdev.vercel.app') || false;
+    const team = [...baseTeam, ...(isBatch3 ? batch3Members : batch1And2Members)];
 
     return (
         <div data-theme="theme-dark" className="relative min-h-screen overflow-hidden bg-background text-foreground">
@@ -99,7 +136,12 @@ export default function TeamPage() {
                 </header>
 
                 {/* Team Grid */}
-                <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <StaggerContainer className={cn(
+                    "grid gap-8",
+                    team.length === 1 ? "grid-cols-1 max-w-sm mx-auto" :
+                    team.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto" :
+                    "grid-cols-1 md:grid-cols-3"
+                )}>
                     {team.map((member) => (
                         <StaggerItem key={member.name}>
                             <motion.div

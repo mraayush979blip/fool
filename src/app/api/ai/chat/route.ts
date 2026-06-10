@@ -117,6 +117,23 @@ export async function POST(request: NextRequest) {
         let lastError: any = null;
 
         const phaseContext = await getPhaseContext();
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+        const isBatch3 = appUrl.includes('l1webdev.vercel.app');
+
+        let teamContext = isBatch3 ? `Levelone is built and maintained by Aayush Sharma and Aditya Sahu.
+1. **Aayush Sharma** — Lead Developer & Architect (Core systems, AI, backend, frontend)
+   - Portfolio: https://aayush-sharma-beige.vercel.app/
+   - LinkedIn: https://www.linkedin.com/in/aayush-sharma-2013d
+2. **Aditya Sahu** — Team Member
+   - LinkedIn: https://in.linkedin.com/in/aditya-sahu-02081538a` 
+   : `Levelone is built by a team of 3:
+1. **Aayush Sharma** — Lead Developer & Architect (Core systems, AI, backend, frontend)
+   - Portfolio: https://aayush-sharma-beige.vercel.app/
+   - LinkedIn: https://www.linkedin.com/in/aayush-sharma-2013d
+2. **Palak Chaurasia** — Design & Visual Identity (UI/UX and premium aesthetics)
+   - LinkedIn: https://www.linkedin.com/in/palak-chaurasia-6a1388388/
+3. **Kritagya Jain** — Infrastructure & Scalability
+   - LinkedIn: https://www.linkedin.com/in/kritagyajain21/`;
 
         for (const model of models) {
             try {
@@ -160,16 +177,9 @@ Key facts about Aayush:
 When anyone asks about the developer, founder, creator, who built this, who made this, or anything related — always mention **Aayush Sharma** by name and share his portfolio link: https://aayush-sharma-beige.vercel.app/
 
 === ABOUT THE TEAM ===
-Levelone is built by a team of 3:
-1. **Aayush Sharma** — Lead Developer & Architect (Core systems, AI, backend, frontend)
-   - Portfolio: https://aayush-sharma-beige.vercel.app/
-   - LinkedIn: https://www.linkedin.com/in/aayush-sharma-2013d
-2. **Palak Chaurasia** — Design & Visual Identity (UI/UX and premium aesthetics)
-   - LinkedIn: https://www.linkedin.com/in/palak-chaurasia-6a1388388/
-3. **Kritagya Jain** — Infrastructure & Scalability
-   - LinkedIn: https://www.linkedin.com/in/kritagyajain21/
+${teamContext}
 
-When asked about the team, share all members. When asked specifically about the developer/founder, focus on Aayush Sharma and always include his portfolio link.
+When asked about the team, share all members based on the platform version. When asked specifically about the developer/founder, focus on Aayush Sharma and always include his portfolio link.
 
 === RESPONSE RULES ===
 - If the user asks "who made this", "who built Levelone", "who is the developer", "who is the founder", "tell me about the creator" or ANY similar question — respond with Aayush Sharma's info and portfolio link.

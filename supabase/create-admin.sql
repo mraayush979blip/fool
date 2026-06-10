@@ -10,8 +10,8 @@
 -- Insert admin user into users table
 INSERT INTO users (id, email, name, role, status)
 VALUES (
-  'YOUR-USER-UUID-HERE',  -- ⚠️ REPLACE THIS with the UUID from auth.users
-  'admin@example.com',     -- Your admin email (must match auth user)
+  '56bf344e-0630-4c54-b46c-8312516a5017',  -- ⚠️ REPLACE THIS with the UUID from auth.users
+  'apk@gmail.com',     -- Your admin email (must match auth user)
   'Admin User',            -- Your name
   'admin',                 -- Role (admin or student)
   'active'                 -- Status (active or revoked)
