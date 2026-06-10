@@ -81,11 +81,11 @@ export default function StudentLayout({
                 data-theme={currentTheme}
                 className={cn(
                     "min-h-screen flex flex-col transition-colors duration-500 font-sans bg-background text-foreground",
-                    !hideNavigation ? 'pb-20 md:pb-0' : ''
+                    !hideNavigation ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0' : ''
                 )}
             >
                 {!hideNavigation && (
-                    <nav className="sticky top-0 border-b border-card-border transition-all duration-300 z-50 backdrop-blur-xl bg-card/80 relative">
+                    <nav className="sticky top-0 pt-[env(safe-area-inset-top)] border-b border-card-border transition-all duration-300 z-50 backdrop-blur-xl bg-card/80 relative">
                         <div className="max-w-7xl mx-auto px-6 relative z-10">
                             <div className="flex justify-between h-20">
                                 <div className="flex items-center space-x-10">
@@ -188,8 +188,8 @@ export default function StudentLayout({
                             </div>
                         </footer>
 
-                        <div className="md:hidden fixed bottom-0 left-0 right-0 h-20 z-50">
-                            <div className="h-full w-full backdrop-blur-3xl rounded-t-2xl border-t border-x border-card-border shadow-[0_-10px_40px_rgba(0,0,0,0.08)] flex items-center justify-around px-4 bg-card/95 relative overflow-hidden">
+                        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 pb-[env(safe-area-inset-bottom)] border-t border-card-border shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
+                            <div className="h-20 w-full backdrop-blur-3xl flex items-center justify-around px-4 relative overflow-hidden">
                                 {menuItems.map((item) => (
                                     <MobileNavLink
                                         key={item.href}

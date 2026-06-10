@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
         const isBatch3 = appUrl.includes('l1webdev.vercel.app');
 
-        let teamContext = isBatch3 ? `Levelone is built and maintained by Aayush Sharma and Aditya Sahu.
+        const teamContext = isBatch3 ? `Levelone is built and maintained by Aayush Sharma and Aditya Sahu.
 1. **Aayush Sharma** — Lead Developer & Architect (Core systems, AI, backend, frontend)
    - Portfolio: https://aayush-sharma-beige.vercel.app/
    - LinkedIn: https://www.linkedin.com/in/aayush-sharma-2013d
