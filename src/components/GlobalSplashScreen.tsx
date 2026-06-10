@@ -4,12 +4,31 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdvancedCyberNinja from './AdvancedCyberNinja';
 
+const SPLASH_KEY = 'splash_seen';
+
 export default function GlobalSplashScreen() {
+    // Determine if this is a return visit before first render
     const [phase, setPhase] = useState<'animating' | 'slashed' | 'bloody' | 'hidden'>('animating');
+    const [isReturnVisit, setIsReturnVisit] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
-        // Real sword sound
+        const seen = localStorage.getItem(SPLASH_KEY);
+
+        if (seen) {
+            // ── RETURN VISIT ──────────────────────────────────────────────
+            // Jump straight to the final "bloody" frame — just a quick logo flash
+            setIsReturnVisit(true);
+            setPhase('bloody');
+
+            const hideTimer = setTimeout(() => {
+                setPhase('hidden');
+            }, 900); // quick 900ms flash then gone
+
+            return () => clearTimeout(hideTimer);
+        }
+
+        // ── FIRST VISIT ───────────────────────────────────────────────────
         audioRef.current = new Audio('/sounds/sword.wav');
         audioRef.current.volume = 1.0;
 
@@ -20,7 +39,6 @@ export default function GlobalSplashScreen() {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {}
 
-        // We assume the real GIF takes ~1.5 seconds to reach the "slash" moment.
         // 1600ms: The slash impacts the screen
         const slashTimer = setTimeout(() => {
             setPhase('slashed');
@@ -34,8 +52,9 @@ export default function GlobalSplashScreen() {
             setPhase('bloody');
         }, 2200);
 
-        // 4500ms: Fade out
+        // 4500ms: Fade out + mark as seen
         const hideTimer = setTimeout(() => {
+            localStorage.setItem(SPLASH_KEY, '1');
             setPhase('hidden');
         }, 4500);
 
@@ -53,7 +72,7 @@ export default function GlobalSplashScreen() {
             <motion.div 
                 initial={{ opacity: 1 }}
                 exit={{ opacity: 0, scale: 1.1 }}
-                transition={{ duration: 0.8, ease: "easeInOut" }}
+                transition={{ duration: isReturnVisit ? 0.4 : 0.8, ease: "easeInOut" }}
                 className="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-[#030303] overflow-hidden"
             >
                 {/* Background Blue Moon / Aura */}
@@ -61,20 +80,22 @@ export default function GlobalSplashScreen() {
                     <motion.div 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: phase === 'bloody' ? 1 : 0 }}
-                        transition={{ duration: 1 }}
+                        transition={{ duration: isReturnVisit ? 0.3 : 1 }}
                         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-blue-900/30 blur-[120px] rounded-full" 
                     />
                 </div>
 
                 <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
                     
-                    {/* The Advanced Cyber Ninja */}
-                    <div className="relative z-30 flex items-center justify-center">
-                        <AdvancedCyberNinja phase={phase} />
-                    </div>
+                    {/* The Advanced Cyber Ninja — hidden on return visits, they only see the logo flash */}
+                    {!isReturnVisit && (
+                        <div className="relative z-30 flex items-center justify-center">
+                            <AdvancedCyberNinja phase={phase} />
+                        </div>
+                    )}
 
-                    {/* The Sword Scratch / Slash */}
-                    {(phase === 'slashed' || phase === 'bloody') && (
+                    {/* The Sword Scratch / Slash — only on first visit full animation */}
+                    {!isReturnVisit && (phase === 'slashed' || phase === 'bloody') && (
                         <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
                             {/* Primary Deep Scratch */}
                             <motion.div 
@@ -111,24 +132,32 @@ export default function GlobalSplashScreen() {
                         </div>
                     )}
 
-                    {/* Cyber Branding */}
+                    {/* Cyber Branding — shown on both first and return visits */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40">
                         {phase === 'bloody' && (
                             <motion.div
-                                initial={{ scale: 2, opacity: 0, filter: 'blur(20px)' }}
+                                initial={{ scale: isReturnVisit ? 1 : 2, opacity: 0, filter: isReturnVisit ? 'blur(0px)' : 'blur(20px)' }}
                                 animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
-                                transition={{ type: "spring", stiffness: 150, damping: 12 }}
+                                transition={
+                                    isReturnVisit
+                                        ? { duration: 0.3, ease: 'easeOut' }
+                                        : { type: "spring", stiffness: 150, damping: 12 }
+                                }
                                 className="relative flex flex-col items-center mt-32"
                             >
                                 <h1 className="text-6xl md:text-8xl font-black tracking-[-0.05em] text-blue-500 drop-shadow-[0_0_25px_rgba(59,130,246,0.9)]" style={{ fontFamily: 'impact, sans-serif' }}>
                                     LEVEL<span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">ONE</span>
                                 </h1>
                                 
-                                {/* Digital drips simulation */}
-                                <div className="absolute top-[80%] left-[20%] w-1.5 bg-blue-500 rounded-b-full shadow-[0_0_8px_#3b82f6]" style={{ animation: 'bloodDrip 2s ease-in forwards' }} />
-                                <div className="absolute top-[80%] left-[45%] w-2 bg-blue-500 rounded-b-full shadow-[0_0_10px_#3b82f6]" style={{ animation: 'bloodDrip 1.5s ease-in forwards 0.3s' }} />
-                                <div className="absolute top-[80%] right-[30%] w-1.5 bg-blue-500 rounded-b-full shadow-[0_0_8px_#3b82f6]" style={{ animation: 'bloodDrip 2.2s ease-in forwards 0.1s' }} />
-                                <div className="absolute top-[80%] right-[10%] w-1 bg-blue-500 rounded-b-full shadow-[0_0_5px_#3b82f6]" style={{ animation: 'bloodDrip 1.8s ease-in forwards 0.5s' }} />
+                                {/* Digital drips simulation — only on first visit */}
+                                {!isReturnVisit && (
+                                    <>
+                                        <div className="absolute top-[80%] left-[20%] w-1.5 bg-blue-500 rounded-b-full shadow-[0_0_8px_#3b82f6]" style={{ animation: 'bloodDrip 2s ease-in forwards' }} />
+                                        <div className="absolute top-[80%] left-[45%] w-2 bg-blue-500 rounded-b-full shadow-[0_0_10px_#3b82f6]" style={{ animation: 'bloodDrip 1.5s ease-in forwards 0.3s' }} />
+                                        <div className="absolute top-[80%] right-[30%] w-1.5 bg-blue-500 rounded-b-full shadow-[0_0_8px_#3b82f6]" style={{ animation: 'bloodDrip 2.2s ease-in forwards 0.1s' }} />
+                                        <div className="absolute top-[80%] right-[10%] w-1 bg-blue-500 rounded-b-full shadow-[0_0_5px_#3b82f6]" style={{ animation: 'bloodDrip 1.8s ease-in forwards 0.5s' }} />
+                                    </>
+                                )}
                                 
                                 <p className="mt-4 text-xs font-black uppercase tracking-[0.4em] text-blue-400/80 drop-shadow-[0_0_5px_rgba(59,130,246,0.5)]">
                                     System Online
