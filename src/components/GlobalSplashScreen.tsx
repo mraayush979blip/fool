@@ -17,15 +17,9 @@ export default function GlobalSplashScreen() {
 
         if (seen) {
             // ── RETURN VISIT ──────────────────────────────────────────────
-            // Jump straight to the final "bloody" frame — just a quick logo flash
-            setIsReturnVisit(true);
-            setPhase('bloody');
-
-            const hideTimer = setTimeout(() => {
-                setPhase('hidden');
-            }, 900); // quick 900ms flash then gone
-
-            return () => clearTimeout(hideTimer);
+            // Skip entirely — user has already seen the full intro
+            setPhase('hidden');
+            return;
         }
 
         // ── FIRST VISIT ───────────────────────────────────────────────────
