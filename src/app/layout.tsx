@@ -10,6 +10,7 @@ import QueryProvider from "@/components/QueryProvider";
 import { Suspense } from 'react';
 import VercelAnalytics from "@/components/VercelAnalytics";
 import GlobalSplashScreen from "@/components/GlobalSplashScreen";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -125,6 +126,7 @@ export default function RootLayout({
             </Suspense>
 
             <VercelAnalytics />
+            <SpeedInsights />
             <Toaster richColors position="top-center" />
           </AuthProvider>
         </QueryProvider>
