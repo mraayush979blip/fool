@@ -148,7 +148,8 @@ export default function StudentDashboard() {
     }, []);
 
     const loading = authLoading || dashboardLoading;
-    const phases = dashboardData?.phases || [];
+    const allPhases = dashboardData?.phases || [];
+    const phases = allPhases.filter((p: any) => getPhaseStatus(p.start_date, p.end_date, p.is_paused) !== 'upcoming');
     const submissions = (dashboardData?.submissions as Set<string>) || new Set<string>();
     const extensions = dashboardData?.extensions || {};
     const stats = dashboardData?.stats || { completedCount: 0, totalTimeSeconds: 0, points: 0 };
@@ -407,7 +408,7 @@ export default function StudentDashboard() {
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-1">Upcoming Content</p>
-                                        <p className="text-xl md:text-2xl font-black text-foreground">{phases.filter(p => getPhaseStatus(p.start_date, p.end_date, p.is_paused) === 'upcoming').length}</p>
+                                        <p className="text-xl md:text-2xl font-black text-foreground">{allPhases.filter(p => getPhaseStatus(p.start_date, p.end_date, p.is_paused) === 'upcoming').length}</p>
                                     </div>
                                 </div>
                             </div>
