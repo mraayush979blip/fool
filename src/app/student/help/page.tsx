@@ -37,7 +37,10 @@ export default function AIHelpPage() {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const footerRef = useRef<HTMLElement>(null);
 
+    // Auto-scroll chat to bottom when new messages arrive
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTo({
@@ -46,6 +49,13 @@ export default function AIHelpPage() {
             });
         }
     }, [messages, isLoading]);
+
+    // When input is focused on mobile, scroll it into view above the keyboard
+    const handleInputFocus = () => {
+        setTimeout(() => {
+            inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 300); // wait for keyboard animation to complete
+    };
 
     const handleSendMessage = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
@@ -111,48 +121,59 @@ export default function AIHelpPage() {
     };
 
     return (
-        <div className="fixed inset-0 h-[100dvh] flex flex-col bg-background font-sans overflow-hidden">
-            {/* Header */}
-            <header className="flex-shrink-0 z-30 bg-card border-b border-card-border px-6 py-4 flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-4 text-foreground">
+        /*
+         * Layout strategy for mobile keyboard:
+         * - Outer wrapper: fixed inset-0, flex-col. Uses dvh so it fills the screen.
+         * - Header: flex-shrink-0 — will NOT compress when keyboard opens.
+         * - Chat body: flex-1 overflow-y-auto — the only scrollable region.
+         * - Footer: flex-shrink-0 — stays at the bottom above the keyboard.
+         *
+         * The global viewport `interactiveWidget: resizes-visual` in layout.tsx
+         * ensures Android keyboard only shrinks the visual viewport (scroll area),
+         * NOT the layout viewport, so the header stays pinned at the top.
+         */
+        <div className="fixed inset-0 flex flex-col bg-background font-sans" style={{ height: '100dvh' }}>
+
+            {/* ── Header ─────────────────────────────────────────────────── */}
+            <header className="flex-shrink-0 z-30 bg-card border-b border-card-border px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between shadow-sm">
+                <div className="flex items-center gap-3 sm:gap-4 text-foreground">
                     <Link
                         href="/student"
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-card border border-card-border text-muted font-bold text-xs uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all group"
+                        className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-card border border-card-border text-muted font-bold text-xs uppercase tracking-widest hover:border-primary/30 hover:text-primary transition-all group"
                     >
                         <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                        <span>Back</span>
+                        <span className="hidden sm:inline">Back</span>
                     </Link>
-                    <div className="h-6 w-px bg-card-border mx-2" />
+                    <div className="h-6 w-px bg-card-border" />
                     <div className="flex items-center gap-3">
                         <div className="bg-primary p-2 rounded-xl shadow-sword">
                             <Sparkles className="h-4 w-4 text-white" />
                         </div>
                         <div>
                             <h1 className="text-sm font-black tracking-tight leading-none uppercase text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 drop-shadow-md">AI Sensei</h1>
-                            <div className="flex items-center gap-1.5 mt-1.5">
+                            <div className="flex items-center gap-1.5 mt-1">
                                 <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-                                <span className="text-[10px] font-bold text-blue-400/60 uppercase tracking-[0.2em]">High Performance Node</span>
+                                <span className="text-[10px] font-bold text-blue-400/60 uppercase tracking-[0.2em] hidden sm:inline">High Performance Node</span>
+                                <span className="text-[10px] font-bold text-blue-400/60 uppercase tracking-[0.2em] sm:hidden">Online</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={clearChat}
-                        className="btn-liquid-metal p-2 rounded-xl"
-                        title="Clear conversation"
-                    >
-                        <span className="btn-liquid-metal-inner block">
-                            <Trash2 className="h-4 w-4 text-red-400" />
-                        </span>
-                    </button>
-                </div>
+                <button
+                    onClick={clearChat}
+                    className="btn-liquid-metal p-2 rounded-xl"
+                    title="Clear conversation"
+                >
+                    <span className="btn-liquid-metal-inner block">
+                        <Trash2 className="h-4 w-4 text-red-400" />
+                    </span>
+                </button>
             </header>
 
-            {/* Chat Body */}
+            {/* ── Chat Body ──────────────────────────────────────────────── */}
             <main
                 ref={scrollRef}
-                className="flex-1 overflow-y-auto px-4 py-8 custom-scrollbar relative"
+                className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar"
             >
                 <div className="max-w-3xl mx-auto space-y-6">
                     <AnimatePresence initial={false}>
@@ -219,17 +240,25 @@ export default function AIHelpPage() {
                 </div>
             </main>
 
-            {/* Input Footer */}
-            <footer className="flex-shrink-0 p-6 bg-card border-t border-card-border z-30">
+            {/* ── Input Footer ───────────────────────────────────────────── */}
+            <footer
+                ref={footerRef}
+                className="flex-shrink-0 px-4 pt-3 pb-safe bg-card border-t border-card-border z-30"
+                style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
+            >
                 <div className="max-w-3xl mx-auto">
                     <form
                         onSubmit={handleSendMessage}
                         className="relative group flex items-center gap-3 bg-card p-1.5 rounded-2xl border border-card-border focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all shadow-inner"
                     >
                         <input
+                            ref={inputRef}
                             type="text"
+                            inputMode="text"
+                            enterKeyHint="send"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
+                            onFocus={handleInputFocus}
                             placeholder="Type your message..."
                             className="flex-1 bg-transparent border-none !px-4 !py-3 !shadow-none !ring-0 text-sm focus:outline-none placeholder:text-muted/50 text-foreground"
                             disabled={isLoading}
@@ -244,7 +273,7 @@ export default function AIHelpPage() {
                             </span>
                         </button>
                     </form>
-                    <div className="mt-4 flex items-center justify-between px-2 text-[10px] font-bold text-muted uppercase tracking-widest opacity-60">
+                    <div className="mt-2 mb-1 flex items-center justify-between px-2 text-[10px] font-bold text-muted uppercase tracking-widest opacity-60">
                         <div className="flex items-center gap-4">
                             <span className="flex items-center gap-1.5">
                                 <Shield className="h-3 w-3" /> Encrypted Session
@@ -253,10 +282,10 @@ export default function AIHelpPage() {
                                 <Zap className="h-3 w-3" /> Instant Response
                             </span>
                         </div>
-                        <p>Built for Excellence • Levelone v2.0</p>
+                        <p className="hidden sm:block">Built for Excellence • Levelone v2.0</p>
                     </div>
                 </div>
-            </footer >
+            </footer>
 
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar {
@@ -276,6 +305,6 @@ export default function AIHelpPage() {
                     background: #1e293b;
                 }
             `}</style>
-        </div >
+        </div>
     );
 }

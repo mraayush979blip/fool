@@ -19,6 +19,9 @@ export const viewport: Viewport = {
   userScalable: false,
   themeColor: "#030303",
   viewportFit: "cover",
+  // Prevents Android keyboard from resizing the layout viewport
+  // so fixed/sticky headers don't get pushed off screen
+  interactiveWidget: "resizes-visual",
 };
 
 const geistSans = Geist({
