@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trophy, Flame, Users, CheckCircle2, Loader2, ArrowLeft, Medal, Zap, Sparkles, Crown } from 'lucide-react';
+import { Trophy, Flame, Users, CheckCircle2, ArrowLeft, Medal, Zap, Sparkles, Crown } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import Link from 'next/link';
 import BadgeList from '@/components/gamification/BadgeList';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -113,12 +114,71 @@ export default function CompetePage() {
 
     if (loading) {
         return (
-            <div className="flex flex-col justify-center items-center min-h-[60vh] space-y-4">
-                <Loader2 className="animate-spin h-8 w-8 text-indigo-600" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fetching Standings...</p>
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-12 pb-24">
+                {/* Header skeleton */}
+                <div className="pb-6 border-b border-card-border space-y-3">
+                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-10 w-64" />
+                    <Skeleton className="h-4 w-80" />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Left column */}
+                    <div className="lg:col-span-4 space-y-6">
+                        {/* Streak card */}
+                        <Skeleton className="h-44 w-full rounded-3xl" />
+                        {/* Community progress */}
+                        <div className="bg-card border border-card-border rounded-3xl p-6 space-y-5">
+                            <Skeleton className="h-3 w-36" />
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="space-y-2">
+                                    <div className="flex justify-between">
+                                        <Skeleton className="h-3 w-20" />
+                                        <Skeleton className="h-3 w-24" />
+                                    </div>
+                                    <Skeleton className="h-1.5 w-full rounded-full" />
+                                </div>
+                            ))}
+                        </div>
+                        {/* Badge area */}
+                        <div className="bg-card border border-card-border rounded-3xl p-6 space-y-4">
+                            <Skeleton className="h-3 w-24" />
+                            <div className="grid grid-cols-4 gap-3">
+                                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                                    <Skeleton key={i} className="h-12 w-12 rounded-2xl" />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right column — leaderboard */}
+                    <div className="lg:col-span-8">
+                        <div className="bg-card border border-card-border rounded-[2rem] overflow-hidden">
+                            <div className="p-6 border-b border-card-border">
+                                <Skeleton className="h-3 w-48" />
+                            </div>
+                            <div className="divide-y divide-card-border">
+                                {[1, 2, 3, 4, 5].map((i) => (
+                                    <div key={i} className="p-6 flex items-center justify-between">
+                                        <div className="flex items-center gap-6">
+                                            <Skeleton className="h-7 w-7 rounded-lg" />
+                                            <Skeleton className="h-12 w-12 rounded-2xl" />
+                                            <div className="space-y-2">
+                                                <Skeleton className="h-4 w-32" />
+                                                <Skeleton className="h-3 w-24" />
+                                            </div>
+                                        </div>
+                                        <Skeleton className="h-7 w-16 rounded-full" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
+
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isNeon = user?.equipped_theme === 'theme-neon';

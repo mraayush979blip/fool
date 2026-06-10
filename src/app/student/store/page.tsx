@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Loader2, ArrowLeft, ShoppingBag, Sparkles } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Sparkles } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import Link from 'next/link';
 import StoreItemCard, { StoreItem } from '@/components/gamification/StoreItemCard';
 import PointsDisplay from '@/components/gamification/PointsDisplay';
@@ -174,9 +175,38 @@ export default function StorePage() {
 
     if (loading) {
         return (
-            <div className="flex flex-col justify-center items-center min-h-[60vh] space-y-4">
-                <Loader2 className="animate-spin h-8 w-8 text-indigo-600" />
-                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Loading Rewards...</p>
+            <div className="max-w-6xl mx-auto px-6 py-12 space-y-16 pb-24">
+                {/* Header skeleton */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-8 border-b border-card-border">
+                    <div className="space-y-3">
+                        <Skeleton className="h-3 w-28" />
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-11 w-56" />
+                        <Skeleton className="h-4 w-80" />
+                    </div>
+                    {/* Points display skeleton */}
+                    <Skeleton className="h-16 w-40 rounded-2xl" />
+                </div>
+
+                {/* Store grid skeleton — 8 cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="bg-card border border-card-border rounded-3xl p-5 space-y-4">
+                            {/* Item preview area */}
+                            <Skeleton className="h-28 w-full rounded-2xl" />
+                            {/* Item name + type badge */}
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-3 w-1/2" />
+                            </div>
+                            {/* Cost + button */}
+                            <div className="flex items-center justify-between pt-1">
+                                <Skeleton className="h-5 w-16 rounded-full" />
+                                <Skeleton className="h-8 w-20 rounded-xl" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
