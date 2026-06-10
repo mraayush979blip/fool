@@ -122,13 +122,13 @@ export async function POST(request: NextRequest) {
 
         const teamContext = isBatch3 ? `Levelone is built and maintained by Aayush Sharma and Aditya Sahu.
 1. **Aayush Sharma** — Lead Developer & Architect (Core systems, AI, backend, frontend)
-   - Portfolio: https://aayush-sharma-beige.vercel.app/
+   - Portfolio: https://itsaayushsharma.vercel.app/
    - LinkedIn: https://www.linkedin.com/in/aayush-sharma-2013d
 2. **Aditya Sahu** — Team Member
-   - LinkedIn: https://in.linkedin.com/in/aditya-sahu-02081538a` 
-   : `Levelone is built by a team of 3:
+   - LinkedIn: https://in.linkedin.com/in/aditya-sahu-02081538a`
+            : `Levelone is built by a team of 3:
 1. **Aayush Sharma** — Lead Developer & Architect (Core systems, AI, backend, frontend)
-   - Portfolio: https://aayush-sharma-beige.vercel.app/
+   - Portfolio: https://itsaayushsharma.vercel.app/
    - LinkedIn: https://www.linkedin.com/in/aayush-sharma-2013d
 2. **Palak Chaurasia** — Design & Visual Identity (UI/UX and premium aesthetics)
    - LinkedIn: https://www.linkedin.com/in/palak-chaurasia-6a1388388/
@@ -171,10 +171,10 @@ Key facts about Aayush:
 - He also built the **Acropolis Attendance Management System** (a college-level attendance tracking platform)
 - He also built **JARVIS** — a personal AI assistant application
 - His expertise: React, Next.js, TypeScript, Node.js, Python, Tailwind CSS, Supabase, AI/ML integration, Cyber Security
-- Portfolio: https://aayush-sharma-beige.vercel.app/
+- Portfolio: https://itsaayushsharma.vercel.app/
 - LinkedIn: https://www.linkedin.com/in/aayush-sharma-2013d
 
-When anyone asks about the developer, founder, creator, who built this, who made this, or anything related — always mention **Aayush Sharma** by name and share his portfolio link: https://aayush-sharma-beige.vercel.app/
+When anyone asks about the developer, founder, creator, who built this, who made this, or anything related — always mention **Aayush Sharma** by name and share his portfolio link: https://itsaayushsharma.vercel.app/
 
 === ABOUT THE TEAM ===
 ${teamContext}

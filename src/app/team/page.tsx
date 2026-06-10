@@ -15,7 +15,7 @@ const baseTeam = [
         role: "Founder & Lead Developer",
         description: "Visionary behind Levelone's core architecture and AI systems.",
         linkedin: "https://www.linkedin.com/in/aayush-sharma-2013d",
-        portfolio: "https://aayush-sharma-beige.vercel.app/",
+        portfolio: "https://itsaayushsharma.vercel.app/",
         avatar: "⚡",
         color: "from-indigo-500 to-blue-500",
         bgImage: "/images/team/aayush.png",
@@ -66,13 +66,13 @@ export default function TeamPage() {
     const searchParams = useSearchParams();
     const from = searchParams?.get('from');
     const { user } = useAuth();
-    
+
     // Determine back link based on where they came from or their logged in state
     let backHref = '/';
     let backLabel = 'Back to Home';
-    
+
     const role = from || user?.role;
-    
+
     if (role === 'student') {
         backHref = '/student';
         backLabel = 'Back to Dashboard';
@@ -80,7 +80,7 @@ export default function TeamPage() {
         backHref = '/admin';
         backLabel = 'Back to Admin';
     }
-    
+
     // Determine the environment based on NEXT_PUBLIC_APP_URL
     const isBatch3 = process.env.NEXT_PUBLIC_APP_URL?.includes('l1webdev.vercel.app') || false;
     const team = [...baseTeam, ...(isBatch3 ? batch3Members : batch1And2Members)];
@@ -139,8 +139,8 @@ export default function TeamPage() {
                 <StaggerContainer className={cn(
                     "grid gap-8",
                     team.length === 1 ? "grid-cols-1 max-w-sm mx-auto" :
-                    team.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto" :
-                    "grid-cols-1 md:grid-cols-3"
+                        team.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto" :
+                            "grid-cols-1 md:grid-cols-3"
                 )}>
                     {team.map((member) => (
                         <StaggerItem key={member.name}>

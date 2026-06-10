@@ -60,7 +60,7 @@ export default function CompetePage() {
                     setUserBadges(ubData || []);
 
                     const { data: rankData, error: rankError } = await supabase.rpc('get_student_rank_context', { current_student_id: user.id });
-                    if (rankError) console.error('❌ [Compete] Student Rank Context RPC Error:', rankError);
+                    if (rankError) console.error('❌ [Compete] Rank RPC Error:', rankError.code, rankError.message, rankError.details, rankError.hint);
                     setRankContext(rankData);
                 }
 
@@ -69,7 +69,7 @@ export default function CompetePage() {
 
                 const { data: lbData, error: lbError } = await supabase.rpc('get_leaderboard_v2');
                 if (lbError) {
-                    console.error('❌ [Compete] Leaderboard RPC Error:', lbError);
+                    console.error('❌ [Compete] Leaderboard RPC Error:', lbError.code, lbError.message, lbError.details, lbError.hint);
                     throw lbError;
                 }
 
