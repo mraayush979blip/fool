@@ -57,10 +57,14 @@ export default function StoreItemCard({
             )}>
                 <div className={cn(
                     "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110",
-                    isEquipped ? "bg-indigo-600 text-white shadow-xl shadow-indigo-500/20" : "bg-white dark:bg-white/5 text-slate-400 border border-slate-100 dark:border-white/5"
+                    item.type === 'avatar'
+                        ? "bg-slate-800/60 border border-white/10 text-slate-200"
+                        : isEquipped
+                            ? "bg-indigo-600 text-white shadow-xl shadow-indigo-500/20"
+                            : "bg-white dark:bg-white/5 text-slate-400 border border-slate-100 dark:border-white/5"
                 )}>
                     {item.type === 'avatar' ? (
-                        <span className="text-3xl">{item.asset_value}</span>
+                        <span className="text-3xl leading-none select-none">{item.asset_value}</span>
                     ) : (
                         <Icon className="w-8 h-8" />
                     )}

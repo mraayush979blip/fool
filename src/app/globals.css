@@ -59,7 +59,7 @@ body {
 }
 
 html {
-  overflow-x: hidden;
+  overflow-x: clip; /* clip instead of hidden — doesn't block vertical scroll */
   overscroll-behavior-y: none;
 }
 

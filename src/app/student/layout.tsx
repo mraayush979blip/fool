@@ -32,9 +32,34 @@ export default function StudentLayout({
         if (saved) setLocalTheme(saved);
     }, []);
 
-    const MobileNavLink = ({ href, icon: Icon, label, isActive, id }: { href: string; icon: any; label: string; isActive: boolean; id?: string }) => (
+    // LinkedIn-style back navigation for PWA:
+    // - On a tab → back goes to Dashboard
+    // - On Dashboard → back closes the app
+    useEffect(() => {
+        const isDashboard = pathname === '/student';
+
+        if (isDashboard) {
+            // Push a sentinel entry so a back press can be detected
+            window.history.pushState({ pwaRoot: true }, '');
+        }
+
+        const handlePopState = (e: PopStateEvent) => {
+            if (isDashboard) {
+                // We're at the root — closing the app by going back past the sentinel
+                // On Android PWA this will exit the app; on iOS it's a no-op
+                window.history.go(-1);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [pathname]);
+
+
+    const MobileNavLink = ({ href, icon: Icon, label, isActive, id, shouldReplace }: { href: string; icon: any; label: string; isActive: boolean; id?: string; shouldReplace: boolean }) => (
         <Link
             href={href}
+            replace={shouldReplace}
             id={id}
             className={cn(
                 "flex flex-col items-center justify-center w-full h-full space-y-1 relative transition-all duration-300",
@@ -105,10 +130,14 @@ export default function StudentLayout({
                                     <div className="hidden md:flex items-center space-x-1">
                                         {menuItems.map((item) => {
                                             const isActive = pathname === item.href;
+                                            const isDashboard = pathname === '/student';
+                                            const shouldReplace = !isDashboard; // Replace history if currently on a tab
+                                            
                                             return (
                                                 <Link
                                                     key={item.href}
                                                     href={item.href}
+                                                    replace={shouldReplace}
                                                     id={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
                                                     className={cn(
                                                         "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all relative group",
@@ -190,16 +219,22 @@ export default function StudentLayout({
 
                         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 pb-[env(safe-area-inset-bottom)] border-t border-card-border shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
                             <div className="h-20 w-full backdrop-blur-3xl flex items-center justify-around px-4 relative overflow-hidden">
-                                {menuItems.map((item) => (
-                                    <MobileNavLink
-                                        key={item.href}
-                                        href={item.href}
-                                        icon={item.icon}
-                                        label={item.label.split(' ')[0]}
-                                        isActive={pathname === item.href}
-                                        id={`nav-${item.label.toLowerCase().replace(' ', '-')}-mobile`}
-                                    />
-                                ))}
+                                {menuItems.map((item) => {
+                                    const isDashboard = pathname === '/student';
+                                    const shouldReplace = !isDashboard;
+                                    
+                                    return (
+                                        <MobileNavLink
+                                            key={item.href}
+                                            href={item.href}
+                                            icon={item.icon}
+                                            label={item.label.split(' ')[0]}
+                                            isActive={pathname === item.href}
+                                            shouldReplace={shouldReplace}
+                                            id={`nav-${item.label.toLowerCase().replace(' ', '-')}-mobile`}
+                                        />
+                                    );
+                                })}
                             </div>
                         </div>
                     </>

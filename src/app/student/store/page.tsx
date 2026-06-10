@@ -67,11 +67,11 @@ export default function StorePage() {
                     {
                         id: 'default-avatar-id',
                         code: 'CHAR_DEFAULT',
-                        name: 'Student',
+                        name: 'Basic Student',
                         description: 'The standard Levelone student avatar.',
                         cost: 0,
                         type: 'avatar',
-                        asset_value: '👤'
+                        asset_value: '🧑‍💻'
                     }
                 ];
 
