@@ -24,8 +24,8 @@ export default function GlobalSplashScreen() {
         // 1600ms: The slash impacts the screen
         const slashTimer = setTimeout(() => {
             setPhase('slashed');
-            if (audioRef.current && (navigator as any).userActivation?.hasBeenActive) {
-                audioRef.current.play().catch(() => {}); // silent catch
+            if (audioRef.current) {
+                audioRef.current.play().catch(() => {}); // silent catch for strict autoplay policies
             }
         }, 1600);
 

@@ -48,18 +48,37 @@ export default function StudentDashboard() {
                 ]);
             };
 
+            // Only run revoke check when the user is already flagged as revoked,
+            // OR when there are actually ended mandatory phases to check against.
+            // This prevents false redirects on fresh instances / all-future phases.
             try {
-                // Wrap in Promise.resolve to handle the thenable PostgrestBuilder properly
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const { data: isRevoked, error: revokeError } = await withTimeout(Promise.resolve(supabase.rpc('check_and_revoke_self')));
+                if (user?.status === 'revoked') {
+                    // Already revoked — let check_and_revoke_self decide if they should be restored
+                    const { data: isStillRevoked } = await withTimeout(Promise.resolve(supabase.rpc('check_and_revoke_self')));
+                    if (isStillRevoked) {
+                        window.location.href = '/revoked';
+                        return null;
+                    }
+                } else {
+                    // Only run for active students if there are ended mandatory phases
+                    const now = new Date().toISOString();
+                    const { count: endedMandatoryCount } = await supabase
+                        .from('phases')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('is_active', true)
+                        .eq('is_mandatory', true)
+                        .lt('end_date', now);
 
-                if (isRevoked) {
-                    window.location.href = '/revoked';
-                    return null;
+                    if (endedMandatoryCount && endedMandatoryCount > 0) {
+                        const { data: isRevoked } = await withTimeout(Promise.resolve(supabase.rpc('check_and_revoke_self')));
+                        if (isRevoked) {
+                            window.location.href = '/revoked';
+                            return null;
+                        }
+                    }
                 }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (e) {
-
+                console.error('[Revoke check] Error:', e);
             }
 
             try {

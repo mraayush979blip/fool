@@ -19,7 +19,6 @@ const getAudioContext = () => {
 
 const playSwordSwoosh = () => {
     try {
-        if (!(navigator as any).userActivation?.hasBeenActive) return;
         const ctx = getAudioContext();
         if (!ctx) return;
 
