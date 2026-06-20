@@ -42,6 +42,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Levelone by Aayush",
+  applicationName: "Levelone by Aayush",
   description: "Levelone Webdev - A Phase-Based webdev learning platform built by Aayush Sharma. Your ultimate platform for web development learning.",
   keywords: ["levelone", "levelone webdev", "levelone by aayush sharma", "levelone web", "aayush sharma", "webdev", "learning management system", "lms"],
   authors: [{ name: "Aayush Sharma" }],
@@ -51,7 +52,7 @@ export const metadata: Metadata = {
     title: "Levelone by Aayush sharma",
     description: "Levelone Webdev - A Phase-Based Learning Management System built by Aayush Sharma. Join our web development journey.",
     url: "https://l1webdev.vercel.app",
-    siteName: "Levelone",
+    siteName: "Levelone by Aayush",
     images: [
       {
         url: "/icon-ninja-round.png",
@@ -91,6 +92,17 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "Levelone by Aayush",
+              "url": "https://l1webdev.vercel.app/"
+            })
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
