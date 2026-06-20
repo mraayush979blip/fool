@@ -41,8 +41,34 @@ const geistMono = Geist_Mono({
 // Add them only on the specific page/route that needs fresh data.
 
 export const metadata: Metadata = {
-  title: "Levelone",
-  description: "Phase-Based Learning Management System - sab ka sath sab vikas",
+  title: "Levelone by Aayush",
+  description: "Levelone Webdev - A Phase-Based webdev learning platform built by Aayush Sharma. Your ultimate platform for web development learning.",
+  keywords: ["levelone", "levelone webdev", "levelone by aayush sharma", "levelone web", "aayush sharma", "webdev", "learning management system", "lms"],
+  authors: [{ name: "Aayush Sharma" }],
+  creator: "Aayush Sharma",
+  publisher: "Aayush Sharma",
+  openGraph: {
+    title: "Levelone by Aayush sharma",
+    description: "Levelone Webdev - A Phase-Based Learning Management System built by Aayush Sharma. Join our web development journey.",
+    url: "https://l1webdev.vercel.app",
+    siteName: "Levelone",
+    images: [
+      {
+        url: "/icon-ninja-round.png",
+        width: 800,
+        height: 800,
+        alt: "Levelone Logo",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Levelone by Aayush sharma",
+    description: "Levelone Webdev - A Phase-Based Learning Management System built by Aayush Sharma.",
+    images: ["/icon-ninja-round.png"],
+  },
   icons: {
     icon: '/icon-ninja-round.png',
     apple: '/icon-ninja-round.png',
@@ -106,14 +132,14 @@ export default function RootLayout({
               <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#050507] z-[9999]">
                 <div className="relative flex flex-col items-center animate-fade-in-up">
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-blue-600/30 blur-[60px] rounded-full animate-pulse" />
-                  
+
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src="/icon-ninja-round.png" 
-                    alt="Levelone Ninja" 
+                  <img
+                    src="/icon-ninja-round.png"
+                    alt="Levelone Ninja"
                     className="w-32 h-32 relative z-10 rounded-full shadow-[0_0_40px_rgba(59,130,246,0.3)] animate-float"
                   />
-                  
+
                   <h1 className="mt-8 text-3xl font-black tracking-[-0.05em] text-white relative z-10">
                     LEVELONE
                   </h1>
