@@ -41,8 +41,8 @@ const geistMono = Geist_Mono({
 // Add them only on the specific page/route that needs fresh data.
 
 export const metadata: Metadata = {
-  title: "Levelone by Aayush",
-  applicationName: "Levelone by Aayush",
+  title: "Levelone by Aayush sharma",
+  applicationName: "Levelone webdev",
   description: "Levelone Webdev - A Phase-Based webdev learning platform built by Aayush Sharma. Your ultimate platform for web development learning.",
   keywords: ["levelone", "levelone aayush", "levelone webdev", "levelone by aayush sharma", "levelone web", "aayush sharma", "webdev", "learning management system", "lms"],
   authors: [{ name: "Aayush Sharma" }],
