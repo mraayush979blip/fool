@@ -44,7 +44,7 @@ export const metadata: Metadata = {
   title: "Levelone by Aayush",
   applicationName: "Levelone by Aayush",
   description: "Levelone Webdev - A Phase-Based webdev learning platform built by Aayush Sharma. Your ultimate platform for web development learning.",
-  keywords: ["levelone", "levelone webdev", "levelone by aayush sharma", "levelone web", "aayush sharma", "webdev", "learning management system", "lms"],
+  keywords: ["levelone", "levelone aayush", "levelone webdev", "levelone by aayush sharma", "levelone web", "aayush sharma", "webdev", "learning management system", "lms"],
   authors: [{ name: "Aayush Sharma" }],
   creator: "Aayush Sharma",
   publisher: "Aayush Sharma",
